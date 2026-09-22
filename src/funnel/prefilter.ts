@@ -10,7 +10,7 @@ const KNOWN_LARGE = new Set(
   ].map((n) => nameKey(n)),
 );
 
-const FUND_WORDS = /\b(capital|ventures?|vc|partners|fund|funds|holdings|investments?|bank|equity|trust|reit|acquisition corp|asset management|advisors|advisers)\b/i;
+const FUND_WORDS = /\b(capital|ventures?|vc|partners|fund|funds|holdings|investments?|bank|equity|trust|reit|acquisition corp|asset management|advisors|advisers|angels?)\b/i;
 /** Names that are programs or organizations rather than companies ("MedTech Innovator", "Constructor Start Cohort"). */
 const PROGRAM_NAME = /\b(accelerator|incubator|innovators?|programme?|cohort|hackathon|fellowship|venture studio|demo day|challenge|competition|summit|conference)\b/i;
 /** The headline itself says a FUND is being raised/launched ("closes maiden fund", "launch a Venture Capital Fund"). */

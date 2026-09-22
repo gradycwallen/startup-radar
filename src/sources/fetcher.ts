@@ -117,8 +117,13 @@ export class PoliteFetcher implements Fetcher {
     await this.#pace(host);
     const started = this.#now();
     stat.requests++;
+    // A plain AbortSignal.timeout() cannot be cancelled: its internal timer keeps running (and keeps the
+    // process alive) for the full duration even after this request has long since settled. Use our own
+    // timer instead, cleared in `finally`, so a run that completes never has to wait out stale timeouts.
+    const timeoutController = new AbortController();
+    const timer = setTimeout(() => timeoutController.abort(new DOMException("The operation timed out.", "TimeoutError")), this.#timeout);
     try {
-      const signal = options.signal ? AbortSignal.any([AbortSignal.timeout(this.#timeout), options.signal]) : AbortSignal.timeout(this.#timeout);
+      const signal = options.signal ? AbortSignal.any([timeoutController.signal, options.signal]) : timeoutController.signal;
       const res = await this.#fetch(url, {
         method: "GET",
         redirect: "follow",
@@ -149,6 +154,8 @@ export class PoliteFetcher implements Fetcher {
       stat.errors.push(message.slice(0, 120));
       stat.elapsed_ms += this.#now() - started;
       throw new FetchError(url, message);
+    } finally {
+      clearTimeout(timer);
     }
   }
 }

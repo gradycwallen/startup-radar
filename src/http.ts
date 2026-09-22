@@ -55,10 +55,14 @@ export function createHomepageChecker(fetchImpl: typeof fetch = fetch): Homepage
   return async (domain, signal) => {
     let lastError = "unreachable";
     for (const host of [domain, `www.${domain}`]) {
+      // A plain AbortSignal.timeout() cannot be cancelled and keeps the process alive for its full
+      // duration even after the request has settled; use our own timer, cleared in `finally`.
+      const timeoutController = new AbortController();
+      const timer = setTimeout(() => timeoutController.abort(new DOMException("The operation timed out.", "TimeoutError")), 12_000);
       try {
         const res = await fetchImpl(`https://${host}/`, {
           redirect: "follow",
-          signal: signal ? AbortSignal.any([AbortSignal.timeout(12_000), signal]) : AbortSignal.timeout(12_000),
+          signal: signal ? AbortSignal.any([timeoutController.signal, signal]) : timeoutController.signal,
           headers: {
             "user-agent": "StartupRadarScout/0.1 (verification; read-only)",
             accept: "text/html,application/xhtml+xml",
@@ -74,6 +78,8 @@ export function createHomepageChecker(fetchImpl: typeof fetch = fetch): Homepage
         lastError = `http_${res.status}`;
       } catch (err) {
         lastError = err instanceof Error ? (err.cause instanceof Error ? err.cause.message : err.message) : String(err);
+      } finally {
+        clearTimeout(timer);
       }
     }
     return { reachable: false, error: lastError };

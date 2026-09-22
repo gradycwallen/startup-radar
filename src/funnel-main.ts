@@ -171,9 +171,12 @@ async function main(): Promise<number> {
 }
 
 main().then(
-  (code) => process.exit(code),
+  // Set exitCode and let Node exit naturally once the event loop drains, rather than calling process.exit()
+  // immediately: on some platforms a large stdout write to a piped consumer (e.g. --json on a big run) is
+  // still buffered when process.exit() would tear the process down, truncating the output.
+  (code) => { process.exitCode = code; },
   (err) => {
     console.error(err instanceof Error ? `${err.name}: ${err.message}` : err);
-    process.exit(1);
+    process.exitCode = 1;
   },
 );
