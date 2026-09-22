@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCompanyById } from "@/lib/data/companies";
+import { getSignalIntelligenceForCompany } from "@/lib/data/signals";
 import { ConfidenceBadge } from "@/components/company/confidence-badge";
 import { EvidenceTimeline } from "@/components/company/evidence-timeline";
+import { SignalIntelligenceSection } from "@/components/company/signal-intelligence-section";
 import { DataSourceBanner } from "@/components/ui/data-source-banner";
 import { categoryClasses } from "@/lib/derive/category-color";
 import { formatDate, recencyLabel } from "@/lib/derive/recency";
@@ -28,6 +30,8 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
 
   const { source, company } = await getCompanyById(parsed);
   if (!company) notFound();
+
+  const intelligence = await getSignalIntelligenceForCompany(company.id);
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
@@ -75,6 +79,8 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
           ) : null}
         </div>
       ) : null}
+
+      <SignalIntelligenceSection intelligence={intelligence} />
 
       <section className="mt-10 max-w-3xl">
         <h2 className="font-serif text-xl text-ink">Discovery timeline</h2>

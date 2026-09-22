@@ -9,6 +9,11 @@
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    // V2-3A: lets test/*.test.ts import project files with an explicit ".ts" extension, which
+    // Node's own native TypeScript execution (`node --test`) requires for relative specifiers.
+    // Safe with "noEmit": true (required by this flag); Next's own app code still uses
+    // extensionless imports throughout (unaffected — this only ALLOWS the extension, never requires it).
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",

@@ -780,7 +780,7 @@ the delivery report for the reasoning against adding one now).
 | V2-3 | **[not yet scoped]** | Not defined by the user at time of writing. Do not invent scope for it. |
 | Controlled database writes to `companies`/`discovery_events` ("Phase 2") | **[BUILT, narrow scope — V2-1.1]** | `src/discovery/store.ts` writes new companies + their initial events only, under hard caps, via `npm run discover`. Does not (yet) add events to already-existing companies — see §5C. Any broader write scope still requires explicit approval. |
 | Automation (scheduled runs) | **[LIVE for signals; BUILT, pending commit for discovery]** | Two separate GitHub Actions workflows: `.github/workflows/signals.yml` (§5B, live) and `.github/workflows/discovery.yml` (§5C, built and locally validated, not yet committed). |
-| Frontend / product | **[V1 BUILT]** | Radar feed, Explore, Company Detail, light/dark theme. Read-only against Supabase, no enrichment/watchlists/comparison/alerts yet. See §10. |
+| Frontend / product | **[V1 BUILT + V2-3A BUILT]** | Radar feed, Explore, Company Detail, light/dark theme (V1), plus a Signal Intelligence section on Company Detail (V2-3A). Read-only against Supabase, no enrichment/watchlists/comparison/alerts, no signal score yet. See §10. |
 
 ---
 
@@ -815,6 +815,40 @@ Frontend work is expected to **surface additional data requirements** (fields, a
 that should feed back into Scout/schema decisions, rather than the backend speculatively expanding first
 to guess what a UI will need. Let frontend needs drive schema changes — through the normal approval
 process — rather than pre-building for it now.
+
+**V2-3A (Signal Intelligence on Company Detail) — [BUILT]**. Adds a new Signal Intelligence section
+to `/companies/[id]` — the first frontend surface for the `signal_sources`/`observations`/`signals`
+data V2-2A/V2-2B built (§5A–§5D). Company-Detail-only: Radar, Explore, and Discovery Momentum
+(`src/lib/derive/momentum.ts`, still `discovery_events`-only) are untouched, and the two systems are
+kept visually and conceptually separate — the word "momentum" never appears in Signal Intelligence
+copy. Section order: header → description → "why it's on the radar" → **Signal Intelligence** →
+Discovery timeline.
+
+New frontend modules: `frontend/src/lib/data/signals.ts` (a server-only, request-memoized read of
+all three signal tables for one company — same posture as `data/companies.ts`: `.select()` only,
+service-role key never reaches the browser) and `frontend/src/lib/derive/signal-view-model.ts` (the
+presentation layer — turns raw `signal_type` strings into human titles via a lookup table plus a
+humanizing fallback for anything unrecognized, never a switch statement in a component). Six new
+components under `frontend/src/components/company/` (`signal-intelligence-section`,
+`first-look-signal-card`, `transition-signal-card`, `signal-card-shell`, `signal-evidence`,
+`coverage-line`, `family-badge`).
+
+Preserves the backend's own semantics in the UI, not just the data: first-look ("cold-start") signals
+get a "First observed" tag and state-only wording (title/evidence text is checked by test to never
+say "appeared"/"increased"/"started"/"surged"); confirmed transitions show a compact
+absent→first-observed→confirmed progression built only from real observation rows, never a
+fabricated middle step. Evidence for a signal with only a `to_value` (every first-look level signal
+— there is no prior reading to compare against) shows a single "X observed: N" row rather than
+either omitting the number or inventing a "0 → N" comparison. Coverage is one line of plain text
+(`Early evidence` / `Developing history · Tracked for N days` / `Longitudinal history · Tracked for
+N days`, `· N signal families observed` appended only once real signals exist) — never a percentage,
+bar, or score. Three distinct empty states (no sources resolved / sources but nothing fired yet / a
+specific piece of evidence not yet determined), none using words like "missing"/"failed"/"none."
+
+Zero schema/migration changes (confirmed against the live database before building). Frontend tests
+added at `frontend/test/` (`node --test`, Node 24's native TypeScript execution — no new
+dependency), covering the view-model layer's pure functions. Live-validated against the real
+companies with signals (GitHits, Spott, Zeliq) and several with none.
 
 ---
 
@@ -924,6 +958,13 @@ See the delivery report for the exact next steps before commit/push.
 **Frontend**: V1 (§10) is built at `frontend/` and has been committed and pushed to `origin/main`
 (`1fc56e8`) — build/typecheck/lint clean, verified against live Supabase data, light/dark theme
 implemented and verified. Not touched by V2-2A, V2-2A.1, or V2-2B.2.
+
+**Signal Intelligence frontend**: V2-3A (§10) is complete — a new Signal Intelligence section on
+`/companies/[id]`, a server-only `signals.ts` data module, and a `signal-view-model.ts` presentation
+layer, all built read-only against the existing `signal_sources`/`observations`/`signals` tables
+(no schema change). Radar, Explore, and Discovery Momentum are untouched. Build/typecheck/lint/tests
+clean; live-validated against real signal-bearing companies (GitHits, Spott, Zeliq) and several
+zero-signal companies.
 
 **Website structural monitoring**: V2-2B.2 (§5D) is complete — deterministic `website` signal
 family, additive migration applied and verified live (`signal_sources.source_type` +=`website`,

@@ -58,3 +58,70 @@ export interface CompanyWithEvents extends Company {
 /** Where a given payload came from — surfaced in the UI so mock data is never mistaken for live
  * intelligence. See src/lib/data/companies.ts. */
 export type DataSource = "supabase" | "mock";
+
+// ---- V2-3A: Signal Intelligence (public.signal_sources / observations / signals) ---------------
+//
+// These are DELIBERATELY separate from Company/DiscoveryEvent above and are never merged into
+// CompanyWithEvents — Signal Intelligence (Scout's derived, deterministic backend signals) and
+// Discovery (external events/articles) are different concepts; see root CLAUDE.md and the V2-3A
+// delivery report for why they must not be blurred together. Field names here mirror the raw
+// backend types 1:1 (src/signals/types.ts in the repo root) — this file has no dependency on that
+// module; it is redefined here on purpose, matching this file's own stated decoupling policy.
+
+/** A resolved external source Scout observes for a company. Maps 1:1 to public.signal_sources.
+ * `sourceType` is left as `string` (not a union), matching how `DiscoveryEvent.eventType` is
+ * already handled above — new source types can appear before this file is updated, and callers
+ * must degrade gracefully rather than assume a closed set. */
+export interface SignalSource {
+  id: number;
+  companyId: number;
+  sourceType: string;
+  externalId: string;
+  canonicalUrl: string | null;
+  resolutionMethod: string;
+  active: boolean;
+}
+
+/** One raw, append-only observation. Maps 1:1 to public.observations. `metadata` is small,
+ * normalized, backend-controlled evidence (see the V2-2B.2 delivery report) — never raw HTML,
+ * never a giant payload; still treated here as opaque/untyped since its shape varies by family and
+ * metric, and the view-model layer (src/lib/derive/signal-view-model.ts) is solely responsible for
+ * deciding what, if anything, from it is safe/useful to surface. */
+export interface SignalObservation {
+  id: number;
+  companyId: number;
+  signalSourceId: number;
+  metricName: string;
+  numericValue: number | null;
+  textValue: string | null;
+  observedAt: string; // ISO timestamptz — when Scout captured it
+  collectionVersion: string;
+  metadata: Record<string, unknown> | null;
+}
+
+/** One derived, deterministic signal. Maps 1:1 to public.signals. `family`/`signalType` are left
+ * as `string` (not unions) for the same forward-compatibility reason as `SignalSource.sourceType`
+ * — a future family/signal_type must degrade gracefully, never crash a page render. */
+export interface DerivedSignal {
+  id: number;
+  companyId: number;
+  family: string;
+  signalType: string;
+  windowDays: number;
+  fromObservationId: number | null;
+  toObservationId: number | null;
+  fromValue: number | null;
+  toValue: number | null;
+  delta: number | null;
+  relativeChange: number | null;
+  explanation: string;
+  firedAt: string; // ISO timestamptz
+  metadata: Record<string, unknown> | null;
+}
+
+/** Everything Signal Intelligence needs for one company, fetched together. */
+export interface SignalIntelligence {
+  sources: SignalSource[];
+  observations: SignalObservation[];
+  signals: DerivedSignal[];
+}
