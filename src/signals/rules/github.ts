@@ -1,7 +1,7 @@
 import type { DerivedSignal, Observation } from "../types.ts";
 import { bestAvailableWindow, isPersistent, metricSeries } from "../velocity.ts";
-import { GITHUB_RULE_VERSION, GITHUB_THRESHOLDS } from "./thresholds.ts";
-import { fmtNum, fmtPct, makeSignal } from "./format.ts";
+import { GITHUB_LEVEL_RULE_VERSION, GITHUB_LEVEL_THRESHOLDS, GITHUB_RULE_VERSION, GITHUB_THRESHOLDS } from "./thresholds.ts";
+import { fmtNum, fmtPct, makeLevelSignal, makeSignal } from "./format.ts";
 
 /**
  * Deterministic GitHub signals. Stars are tracked but deliberately do NOT dominate: star_velocity
@@ -51,6 +51,67 @@ export function deriveGithubSignals(companyId: number, history: readonly Observa
         rule_version: GITHUB_RULE_VERSION, explanation: `A new release was published (${latest.text_value}), superseding the previously observed release (${prior.text_value}).`,
         fired_at: new Date().toISOString(), metadata: null,
       });
+    }
+  }
+
+  return out;
+}
+
+/**
+ * LEVEL GitHub signals (V2-2B.1) — the GitHub-side half of the cold-start fix; see
+ * rules/hiring.ts: deriveHiringLevelSignals for the full rationale (gated on
+ * `metricSeries(...).length === 1`, fires at most once ever per company per metric, wording
+ * restricted to describing the current state only). `now` is an explicit, injectable parameter
+ * (not `Date.now()`), threaded down from orchestrate.ts's own `deps.now`, so the release-recency
+ * check stays deterministic and testable like everything else in this codebase.
+ */
+export function deriveGithubLevelSignals(companyId: number, history: readonly Observation[], now: Date): Omit<DerivedSignal, "id">[] {
+  const out: Omit<DerivedSignal, "id">[] = [];
+
+  const commitsSeries = metricSeries(history, "github_commits_last_4w");
+  if (commitsSeries.length === 1) {
+    const obs = commitsSeries[0]!;
+    if (obs.numeric_value !== null && obs.numeric_value >= GITHUB_LEVEL_THRESHOLDS.activeCommitsAtFirstObservation) {
+      out.push(
+        makeLevelSignal(
+          companyId, "github", "active_development_present_at_first_observation", GITHUB_LEVEL_RULE_VERSION, obs,
+          `${fmtNum(obs.numeric_value)} commits in the trailing 4 weeks observed at first look — notably active development present. No prior reading exists, so this is reported as the current level, not a change.`,
+        ),
+      );
+    }
+  }
+
+  const contributorsSeries = metricSeries(history, "github_contributors");
+  if (contributorsSeries.length === 1) {
+    const obs = contributorsSeries[0]!;
+    if (obs.numeric_value !== null && obs.numeric_value >= GITHUB_LEVEL_THRESHOLDS.contributorsAtFirstObservation) {
+      out.push(
+        makeLevelSignal(
+          companyId, "github", "meaningful_contributor_count_at_first_observation", GITHUB_LEVEL_RULE_VERSION, obs,
+          `${fmtNum(obs.numeric_value)} contributors observed at first look — a meaningful contributor base present. No prior reading exists, so this is reported as the current level, not a change.`,
+        ),
+      );
+    }
+  }
+
+  // Recent-release-at-first-look: unlike the other level checks, this needs no history-count gate
+  // beyond "first observation of this metric" — it's a freshness check on the reading's OWN
+  // source-reported date, not a magnitude threshold, so there's nothing for a second observation
+  // to add here (the existing velocity `release_activity` rule takes over once a SECOND, DIFFERENT
+  // release is observed).
+  const releaseSeries = metricSeries(history, "github_latest_release_at");
+  if (releaseSeries.length === 1) {
+    const obs = releaseSeries[0]!;
+    if (obs.text_value) {
+      const releaseAgeDays = (now.getTime() - new Date(obs.text_value).getTime()) / 86_400_000;
+      if (releaseAgeDays >= 0 && releaseAgeDays <= GITHUB_LEVEL_THRESHOLDS.recentReleaseMaxAgeDays) {
+        out.push(
+          makeLevelSignal(
+            companyId, "github", "recent_release_present_at_first_observation", GITHUB_LEVEL_RULE_VERSION, obs,
+            `Most recent release (${obs.text_value}) is within the last ${Math.round(releaseAgeDays)} days — recent release activity present at first look.`,
+          ),
+        );
+      }
     }
   }
 

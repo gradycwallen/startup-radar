@@ -1,7 +1,7 @@
 import type { DerivedSignal, Observation } from "../types.ts";
-import { bestAvailableWindow, isPersistent } from "../velocity.ts";
-import { HIRING_RULE_VERSION, HIRING_THRESHOLDS } from "./thresholds.ts";
-import { fmtNum, fmtPct, makeSignal } from "./format.ts";
+import { bestAvailableWindow, isPersistent, metricSeries } from "../velocity.ts";
+import { HIRING_LEVEL_RULE_VERSION, HIRING_LEVEL_THRESHOLDS, HIRING_RULE_VERSION, HIRING_THRESHOLDS } from "./thresholds.ts";
+import { fmtNum, fmtPct, makeLevelSignal, makeSignal } from "./format.ts";
 
 /**
  * Deterministic hiring signals from ATS observations. No LLM decides anything here — every fired
@@ -47,6 +47,73 @@ export function deriveHiringSignals(companyId: number, history: readonly Observa
     const cmp = bestAvailableWindow(history, metric);
     if (cmp && cmp.from?.numeric_value === 0 && cmp.to.numeric_value === 1) {
       out.push(makeSignal(companyId, "hiring", signalType, HIRING_RULE_VERSION, cmp, `First appearance of ${label} in the last ${Math.round(cmp.actualSpanDays ?? cmp.windowDays)} days (none was open before).`));
+    }
+  }
+
+  return out;
+}
+
+/**
+ * LEVEL hiring signals (V2-2B.1) — fire from a metric's FIRST-EVER observation, when no prior
+ * reading exists to compare against. This is the direct fix for the cold-start defect: without
+ * these, a company observed for the first time cannot produce ANY hiring signal no matter how
+ * strong its evidence is, since every rule above requires `bestAvailableWindow`/`compareWindow`,
+ * which need two observations.
+ *
+ * Each check here is gated on `metricSeries(...).length === 1` — genuinely no prior observation
+ * for that specific metric, not merely "the current value is high." This makes each of these
+ * signals fire AT MOST ONCE per company per metric, ever: the moment a second observation exists,
+ * the metric has real history and the velocity rules above take over instead. A company with a
+ * permanently-high baseline (e.g. always 50 open roles) will NOT re-fire this every day — it fires
+ * once, on day one, and never again for that metric.
+ *
+ * Wording is deliberately restricted to describing the CURRENT state ("present at first
+ * observation") — never "started"/"appeared"/"increased"/"grew". We have zero evidence about
+ * what came before a metric's first-ever reading; claiming a transition we didn't observe would
+ * violate the same "unknown != zero" discipline the missing-vs-zero rules already enforce.
+ */
+export function deriveHiringLevelSignals(companyId: number, history: readonly Observation[]): Omit<DerivedSignal, "id">[] {
+  const out: Omit<DerivedSignal, "id">[] = [];
+
+  const totalSeries = metricSeries(history, "ats_open_jobs_total");
+  if (totalSeries.length === 1) {
+    const obs = totalSeries[0]!;
+    if (obs.numeric_value !== null && obs.numeric_value >= HIRING_LEVEL_THRESHOLDS.openJobsHighAtFirstObservation) {
+      out.push(
+        makeLevelSignal(
+          companyId, "hiring", "high_hiring_present_at_first_observation", HIRING_LEVEL_RULE_VERSION, obs,
+          `${fmtNum(obs.numeric_value)} open positions observed at first look — notably high hiring activity present. No prior reading exists, so this is reported as the current level, not a change.`,
+        ),
+      );
+    }
+  }
+
+  const salesSeries = metricSeries(history, "ats_open_jobs_sales");
+  if (salesSeries.length === 1) {
+    const obs = salesSeries[0]!;
+    if (obs.numeric_value !== null && obs.numeric_value >= HIRING_LEVEL_THRESHOLDS.salesPresentMinCount) {
+      out.push(
+        makeLevelSignal(
+          companyId, "hiring", "sales_hiring_present_at_first_observation", HIRING_LEVEL_RULE_VERSION, obs,
+          `Sales hiring present at first observation (${fmtNum(obs.numeric_value)} open sales roles). No prior reading exists, so whether this is new or long-standing is unknown.`,
+        ),
+      );
+    }
+  }
+
+  for (const [metric, signalType, label] of [
+    ["ats_has_enterprise_sales_role", "enterprise_sales_role_present_at_first_observation", "An enterprise/strategic sales role is"],
+    ["ats_has_recruiting_role", "recruiting_role_present_at_first_observation", "A recruiting role is"],
+    ["ats_has_security_compliance_role", "security_compliance_role_present_at_first_observation", "A security/compliance role is"],
+  ] as const) {
+    const series = metricSeries(history, metric);
+    if (series.length === 1 && series[0]!.numeric_value === 1) {
+      out.push(
+        makeLevelSignal(
+          companyId, "hiring", signalType, HIRING_LEVEL_RULE_VERSION, series[0]!,
+          `${label} present at first observation. No prior reading exists, so whether this is new or long-standing is unknown.`,
+        ),
+      );
     }
   }
 

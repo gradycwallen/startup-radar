@@ -220,6 +220,89 @@ test("orchestrate: a full run makes zero Anthropic-shaped calls and needs no bud
   assert.ok(requested.every((u) => !u.includes("anthropic.com")), "no request was ever made to anthropic.com");
 });
 
+// ---- V2-2B.1: backfill on newly-resolved GitHub sources ----------------------------------------------------------------
+
+function fakeCommitActivity(): Array<{ week: number; total: number }> {
+  const NOW_WEEK_START = Date.UTC(2026, 8, 21) / 1000;
+  const WEEK_S = 7 * 86_400;
+  return Array.from({ length: 52 }, (_, i) => ({ week: NOW_WEEK_START - (51 - i) * WEEK_S, total: 4 }));
+}
+
+test("orchestrate: a newly-resolved github_repo source is backfilled once, in the SAME pass, and the backfilled history feeds signal derivation immediately", async () => {
+  const acme: CompanyContext = { id: 1, name: "Acme Robotics", domain: "acmerobotics.com" };
+  const { store, observations, calls } = fakeStore();
+  const { fetcher } = fakeFetcher({
+    "https://acmerobotics.com/": { status: 200, text: `<a href="https://github.com/acmerobotics/widget">gh</a>` },
+    "https://api.github.com/orgs/acmerobotics": { status: 200, json: { blog: "https://acmerobotics.com" } },
+    "https://api.github.com/repos/acmerobotics/widget": { status: 200, json: { stargazers_count: 5 } },
+    "https://api.github.com/repos/acmerobotics/widget/contributors?per_page=100&anon=false": { status: 200, json: [] },
+    "https://api.github.com/repos/acmerobotics/widget/stats/commit_activity": { status: 200, json: fakeCommitActivity() },
+    "https://api.github.com/repos/acmerobotics/widget/releases?per_page=1": { status: 200, json: [] },
+    "https://api.github.com/repos/acmerobotics/widget/releases?per_page=6": { status: 200, json: [] },
+  });
+  const summary = await runObservationPass([acme], { fetcher, store, now: NOW }, { dryRun: false, force: false });
+  assert.ok(summary.observations_backfilled > 0, "a source-supported backfill (commit history) should have been found and inserted");
+  assert.ok(summary.companies[0]!.newly_resolved[0]!.backfilled_observations > 0);
+  const backfilled = observations.filter((o) => o.collection_version === "github-v1-backfill");
+  assert.ok(backfilled.length > 0);
+  assert.ok(backfilled.every((o) => o.source_timestamp !== null), "every backfilled row carries a real source_timestamp");
+  assert.ok(calls.insertObservations >= 2, "backfill and live collection are separate inserts");
+});
+
+test("orchestrate: re-running after a source is already resolved never backfills again — resolution (and therefore backfill) only ever runs once per company", async () => {
+  const acme: CompanyContext = { id: 1, name: "Acme Robotics", domain: "acmerobotics.com" };
+  const { store, observations } = fakeStore({ sources: [acmeGithubSource()] }); // already resolved from a prior run
+  const { fetcher, requested } = fakeFetcher({
+    "https://api.github.com/repos/acme/widget": { status: 200, json: { stargazers_count: 6 } },
+  });
+  const summary = await runObservationPass([acme], { fetcher, store, now: NOW }, { dryRun: false, force: false });
+  assert.equal(summary.observations_backfilled, 0, "no backfill should be attempted for an already-resolved source");
+  // "/stats/commit_activity" is called by BOTH live collection and backfill, so it alone can't
+  // distinguish them — "/releases?per_page=6" is backfill-ONLY (live always uses per_page=1), so
+  // its absence here is the real proof that backfill was never attempted a second time.
+  assert.ok(!requested.some((u) => u.includes("releases?per_page=6")), "the backfill-only releases endpoint was never called on a second pass");
+  assert.ok(!observations.some((o) => o.collection_version === "github-v1-backfill"), "no duplicate/repeat historical observations are ever produced on a second pass");
+});
+
+test("orchestrate: --dry-run previews backfill (real reads) but writes nothing, exactly like live collection's own dry-run behavior", async () => {
+  const acme: CompanyContext = { id: 1, name: "Acme Robotics", domain: "acmerobotics.com" };
+  const { store, calls, observations } = fakeStore();
+  const { fetcher } = fakeFetcher({
+    "https://acmerobotics.com/": { status: 200, text: `<a href="https://github.com/acmerobotics/widget">gh</a>` },
+    "https://api.github.com/orgs/acmerobotics": { status: 200, json: { blog: "https://acmerobotics.com" } },
+    "https://api.github.com/repos/acmerobotics/widget": { status: 200, json: { stargazers_count: 5 } },
+    "https://api.github.com/repos/acmerobotics/widget/contributors?per_page=100&anon=false": { status: 200, json: [] },
+    "https://api.github.com/repos/acmerobotics/widget/stats/commit_activity": { status: 200, json: fakeCommitActivity() },
+    "https://api.github.com/repos/acmerobotics/widget/releases?per_page=1": { status: 200, json: [] },
+    "https://api.github.com/repos/acmerobotics/widget/releases?per_page=6": { status: 200, json: [] },
+  });
+  const summary = await runObservationPass([acme], { fetcher, store, now: NOW }, { dryRun: true, force: false });
+  assert.ok(summary.companies[0]!.newly_resolved[0]!.backfilled_observations > 0, "dry-run still PREVIEWS what backfill would find");
+  assert.equal(summary.observations_backfilled, 0, "but the aggregate count of what was actually WRITTEN stays 0 in dry-run");
+  assert.equal(calls.insertObservations, 0, "the store's insertObservations must never be called in dry-run");
+  assert.equal(observations.length, 0, "nothing is actually persisted");
+});
+
+test("orchestrate: a backfill failure never blocks resolution or ongoing live collection for that source", async () => {
+  const acme: CompanyContext = { id: 1, name: "Acme Robotics", domain: "acmerobotics.com" };
+  const { store } = fakeStore();
+  const { fetcher } = fakeFetcher({
+    "https://acmerobotics.com/": { status: 200, text: `<a href="https://github.com/acmerobotics/widget">gh</a>` },
+    "https://api.github.com/orgs/acmerobotics": { status: 200, json: { blog: "https://acmerobotics.com" } },
+    "https://api.github.com/repos/acmerobotics/widget": { status: 200, json: { stargazers_count: 5 } },
+    "https://api.github.com/repos/acmerobotics/widget/contributors?per_page=100&anon=false": { status: 200, json: [] },
+    "https://api.github.com/repos/acmerobotics/widget/stats/commit_activity": { status: 200, json: fakeCommitActivity() }, // shared with live collection — must keep working
+    "https://api.github.com/repos/acmerobotics/widget/releases?per_page=1": { status: 200, json: [] },
+    // "/releases?per_page=6" is backfill-ONLY — failing just this one endpoint isolates a genuine
+    // backfill-specific failure without also breaking live collection's own unrelated requests.
+    "https://api.github.com/repos/acmerobotics/widget/releases?per_page=6": { status: 200, json: {}, throws: true },
+  });
+  const summary = await runObservationPass([acme], { fetcher, store, now: NOW }, { dryRun: false, force: false });
+  assert.equal(summary.resolution.resolved_new_sources, 1, "resolution itself must still succeed");
+  assert.equal(summary.companies[0]!.newly_resolved[0]!.backfilled_observations, 0, "the whole backfill attempt failed (one bad endpoint aborts backfillGithubRepoHistory) — recorded honestly as zero, not a crash");
+  assert.equal(summary.companies[0]!.sources.find((s) => s.source_type === "github_repo")?.outcome, "collected", "live collection for this source still runs normally, unaffected by the backfill failure");
+});
+
 // ---- graceful shutdown -----------------------------------------------------------------------------------------------
 
 test("orchestrate: an already-aborted signal stops the run before processing any company", async () => {

@@ -1,4 +1,5 @@
 import type { Fetcher } from "../../sources/fetcher.ts";
+import { STANDARD_WINDOWS_DAYS } from "../velocity.ts";
 import type { CollectedMetric, CollectionResult } from "./types.ts";
 
 /**
@@ -94,6 +95,70 @@ export async function collectGithubRepo(fetcher: Fetcher, owner: string, repo: s
   }
 
   return { metrics, collectionVersion: GITHUB_COLLECTOR_VERSION, sourceStatus: repoRes.status };
+}
+
+/**
+ * V2-2B.1: one-time historical backfill for a repo, run ONCE at the moment a company's GitHub
+ * source is first resolved (see orchestrate.ts) — never on ongoing daily collection, which keeps
+ * capturing only "now" exactly as before. Gives a brand-new company's velocity math real history
+ * to work with immediately, instead of needing to wait real days/weeks for a second live
+ * observation to accumulate.
+ *
+ * ONLY source-supported historical facts are persisted, each with a real `sourceTimestamp` GitHub
+ * itself reported — never interpolated, never guessed. Two things are backfilled:
+ *
+ *  1. `github_commits_last_4w` at several REAL past week boundaries — computed by summing four
+ *     CONSECUTIVE real weekly totals from `/stats/commit_activity`'s own 52-week array (the same
+ *     metric the live collector already reports, just evaluated at earlier real points instead of
+ *     only "now"). This is aggregation of real weekly data GitHub reported, not interpolation
+ *     between two known values — no week's commit count is ever invented. Checkpoints are chosen
+ *     at STANDARD_WINDOWS_DAYS (7/14/30/90 days ago, converted to whole weeks) so velocity.ts's
+ *     window comparisons have real history to find immediately; a checkpoint is skipped outright
+ *     if the 52-week array doesn't actually reach back that far (never padded/guessed).
+ *  2. `github_latest_release_at` for each of the next few PAST releases beyond the one the live
+ *     collector already captures (fetched once, `per_page=6`) — each with its own real
+ *     `published_at` as `sourceTimestamp`. At each of those real past moments, that release WAS
+ *     genuinely the latest known one; this is exactly the history the existing `release_activity`
+ *     velocity rule already knows how to compare.
+ *
+ * Deliberately NOT backfilled: `github_stars`/`github_forks`/`github_open_issues`/
+ * `github_contributors` — GitHub's REST API exposes no historical endpoint for any of these (only
+ * a current snapshot), so there is no source-supported fact to backfill; inventing one would be
+ * exactly the "fake daily observations by interpolating aggregate values" this is required not to do.
+ */
+export async function backfillGithubRepoHistory(fetcher: Fetcher, owner: string, repo: string, opts: GithubCollectorOptions = {}, signal?: AbortSignal): Promise<CollectedMetric[]> {
+  const metrics: CollectedMetric[] = [];
+  const base = `https://api.github.com/repos/${owner}/${repo}`;
+
+  const commitsRes = await getJson(fetcher, `${base}/stats/commit_activity`, opts, signal);
+  if (commitsRes.status === 200 && Array.isArray(commitsRes.json)) {
+    const weeks = commitsRes.json as Array<{ total?: number; week?: number }>; // oldest first; last entry = the current week
+    for (const days of STANDARD_WINDOWS_DAYS) {
+      const weeksAgo = Math.round(days / 7);
+      if (weeksAgo < 1) continue; // "now" — already covered by the live collector, not a backfill point
+      const endIndex = weeks.length - 1 - weeksAgo;
+      const startIndex = endIndex - 3;
+      if (startIndex < 0) continue; // the real weekly history doesn't reach back this far — skip, never pad
+      const slice = weeks.slice(startIndex, endIndex + 1);
+      if (slice.length !== 4) continue;
+      const weekTimestamp = weeks[endIndex]?.week;
+      if (typeof weekTimestamp !== "number") continue; // no real source-reported week boundary — skip, never guess
+      const sum = slice.reduce((sum, w) => sum + (typeof w.total === "number" ? w.total : 0), 0);
+      metrics.push({ metricName: "github_commits_last_4w", numericValue: sum, textValue: null, sourceTimestamp: new Date(weekTimestamp * 1000).toISOString() });
+    }
+  }
+
+  const releasesRes = await getJson(fetcher, `${base}/releases?per_page=6`, opts, signal);
+  if (releasesRes.status === 200 && Array.isArray(releasesRes.json)) {
+    // index 0 is the current/latest release — already captured by the live collector's own
+    // per_page=1 request; backfill only the PAST releases beyond that.
+    for (const release of (releasesRes.json as Array<Record<string, unknown>>).slice(1)) {
+      const publishedAt = str(release.published_at);
+      if (publishedAt) metrics.push({ metricName: "github_latest_release_at", numericValue: null, textValue: publishedAt, sourceTimestamp: publishedAt });
+    }
+  }
+
+  return metrics;
 }
 
 /** Org-level metrics for a GitHub organization/user (no specific repo resolved). */

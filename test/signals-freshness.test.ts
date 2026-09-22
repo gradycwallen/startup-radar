@@ -44,3 +44,26 @@ test("isFresh: a custom freshnessHours override is honored (used by tests / coul
   assert.equal(isFresh(history, 1, now, false, 4), false, "5h old, but the override cooldown is only 4h");
   assert.equal(isFresh(history, 1, now, false, 6), true, "5h old, and the override cooldown is 6h");
 });
+
+test("V2-2B.1 REGRESSION — backfilled observations must NEVER satisfy freshness: a source with ONLY backfilled rows (observed_at = right now, from the backfill run itself) must still be collected live in the same pass", () => {
+  // Real bug found while building backfill: a backfilled row is honestly written with
+  // observed_at = now (when backfill ran), which — before this fix — made mostRecentObservedAt
+  // see a "just collected" timestamp for a source that had never actually been live-collected,
+  // silently skipping that source's first real live collection in the very same pass.
+  const now = new Date("2026-09-22T12:00:00Z");
+  const onlyBackfilled = [
+    obs(1, 1, "github_commits_last_4w", 20, 0, { observed_at: now.toISOString(), source_timestamp: "2026-08-01T00:00:00Z", collection_version: "github-v1-backfill" }),
+    obs(1, 1, "github_latest_release_at", null, 0, { observed_at: now.toISOString(), source_timestamp: "2026-07-15T00:00:00Z", text_value: "2026-07-15T00:00:00Z", collection_version: "github-v1-backfill" }),
+  ];
+  assert.equal(mostRecentObservedAt(onlyBackfilled, 1), null, "backfill-only history must report as 'never live-observed'");
+  assert.equal(isFresh(onlyBackfilled, 1, now, false), false, "a source with only backfilled history must never be treated as fresh");
+});
+
+test("V2-2B.1: a real LIVE observation still correctly makes a source fresh, even when backfilled rows ALSO exist alongside it", () => {
+  const now = new Date("2026-09-22T12:00:00Z");
+  const mixed = [
+    obs(1, 1, "github_commits_last_4w", 20, 0, { observed_at: new Date(now.getTime() - 40 * 86_400_000).toISOString(), source_timestamp: "2026-08-01T00:00:00Z", collection_version: "github-v1-backfill" }),
+    obs(1, 1, "github_stars", 5, 0, { observed_at: new Date(now.getTime() - 2 * 3_600_000).toISOString(), collection_version: "github-v1" }), // real live collection, 2h ago
+  ];
+  assert.equal(isFresh(mixed, 1, now, false), true, "the real live observation still governs freshness normally");
+});

@@ -29,27 +29,42 @@ const DAY_MS = 86_400_000;
 
 export const STANDARD_WINDOWS_DAYS = [7, 14, 30, 90] as const;
 
-/** All observations for one metric, oldest first. */
+/**
+ * V2-2B.1: an observation's position in time, for window/ordering purposes, is `source_timestamp`
+ * when present, falling back to `observed_at` otherwise. This is what makes GitHub backfill
+ * (sources/github.ts: backfillGithubHistory) actually useful for velocity math: a backfilled row's
+ * `observed_at` is truthfully "when we ran the backfill" (today), but its `source_timestamp` is the
+ * REAL historical date GitHub itself reported (a specific week's end, a specific release's publish
+ * date) — using that real date is what lets a brand-new company's history reach back further than
+ * its own discovery date, without ever mutating or fabricating an observed_at value (never done;
+ * see the V2-2B.1 report). Live day-to-day collection never sets source_timestamp for numeric
+ * metrics (deliberately — see sources/github.ts/ats collectors), so this is a no-op for the vast
+ * majority of observations today and only changes behavior for genuinely source-dated rows. */
+function effectiveTimestamp(o: Observation): string {
+  return o.source_timestamp ?? o.observed_at;
+}
+
+/** All observations for one metric, oldest first (by effective timestamp — see above). */
 export function metricSeries(history: readonly Observation[], metricName: string): Observation[] {
-  return history.filter((o) => o.metric_name === metricName).slice().sort((a, b) => a.observed_at.localeCompare(b.observed_at));
+  return history.filter((o) => o.metric_name === metricName).slice().sort((a, b) => effectiveTimestamp(a).localeCompare(effectiveTimestamp(b)));
 }
 
 export function compareWindow(history: readonly Observation[], metricName: string, windowDays: number): WindowComparison | null {
   const series = metricSeries(history, metricName);
   if (series.length === 0) return null;
   const to = series[series.length - 1]!;
-  const toMs = new Date(to.observed_at).getTime();
+  const toMs = new Date(effectiveTimestamp(to)).getTime();
   const cutoffMs = toMs - windowDays * DAY_MS;
 
   let from: Observation | null = null;
   for (const o of series) {
     if (o === to) break;
-    if (new Date(o.observed_at).getTime() <= cutoffMs) from = o;
-    else break; // series is ascending: once we pass the cutoff, nothing later qualifies either
+    if (new Date(effectiveTimestamp(o)).getTime() <= cutoffMs) from = o;
+    else break; // series is ascending (by effective timestamp): once we pass the cutoff, nothing later qualifies either
   }
 
   const sufficientHistory = from !== null;
-  const actualSpanDays = from ? (toMs - new Date(from.observed_at).getTime()) / DAY_MS : null;
+  const actualSpanDays = from ? (toMs - new Date(effectiveTimestamp(from)).getTime()) / DAY_MS : null;
   const toVal = to.numeric_value;
   const fromVal = from?.numeric_value ?? null;
   const fromWasZero = fromVal === 0;

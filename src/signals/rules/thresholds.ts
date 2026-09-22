@@ -34,3 +34,42 @@ export const GITHUB_THRESHOLDS = {
   /** The CURRENT 4-week commit count must clear this to count as "active" for quiet_to_active. */
   activeCommitsFloor: 10,
 } as const;
+
+/**
+ * LEVEL signals (V2-2B.1) — fire from a metric's FIRST-EVER observation alone (see
+ * rules/hiring.ts: deriveHiringLevelSignals, rules/github.ts: deriveGithubLevelSignals). No prior
+ * reading exists to compare against, so these describe the CURRENT absolute state only — never a
+ * claimed increase/appearance/start (see makeLevelSignal's explanation wording).
+ *
+ * Non-negotiable calibration rule: a level threshold must be MORE conservative than the
+ * corresponding velocity threshold, because a level signal has no corroborating trend behind it —
+ * a single strong reading has to be strong enough to stand on its own. These are explicitly
+ * DELIBERATELY CONSERVATIVE, UNVALIDATED starting values (same disclosed posture as every other
+ * threshold in this file) — not backtested against real outcomes yet.
+ */
+export const HIRING_LEVEL_RULE_VERSION = "hiring-level-v1";
+export const HIRING_LEVEL_THRESHOLDS = {
+  /** Open positions at first observation to call hiring "notably high" with zero history — the
+   * exact worked example from the V2-2B design brief ("~10 open roles"), not an arbitrary round
+   * number. Compare: the VELOCITY "increase" threshold is a delta of just 3 (openJobsIncreaseMinDelta). */
+  openJobsHighAtFirstObservation: 10,
+  /** Open sales postings at first observation to call sales hiring "meaningfully present." More
+   * conservative than the velocity sales_hiring_started rule, which fires on ANY 0->nonzero
+   * transition — that rule has an observed zero baseline to compare against; this one does not. */
+  salesPresentMinCount: 2,
+} as const;
+
+export const GITHUB_LEVEL_RULE_VERSION = "github-level-v1";
+export const GITHUB_LEVEL_THRESHOLDS = {
+  /** Trailing-4-week commits at first observation to call development "notably active" with zero
+   * history — deliberately 2x the velocity quiet_to_active rule's activeCommitsFloor (10), since
+   * that rule at least knows the PRIOR reading was quiet; this one has no prior reading at all. */
+  activeCommitsAtFirstObservation: 20,
+  /** Contributor count at first observation to call the contributor base "meaningful." No existing
+   * velocity threshold to anchor against (contributorGrowthMinDelta is a delta, not a level) — a
+   * conservative starting value, disclosed as unvalidated. */
+  contributorsAtFirstObservation: 5,
+  /** A most-recent release dated within this many days of first observation counts as "recent" —
+   * i.e. real, ongoing shipping activity, not a project that happens to have shipped once, years ago. */
+  recentReleaseMaxAgeDays: 14,
+} as const;

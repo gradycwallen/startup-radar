@@ -14,12 +14,20 @@ import type { Observation } from "./types.ts";
 export const COLLECTION_FRESHNESS_HOURS = 22;
 const HOUR_MS = 3_600_000;
 
-/** The most recent `observed_at` across ALL observations for one signal source, or null if this
- * source has never been observed at all (in which case it is never "fresh" — always collect). */
+/** The most recent `observed_at` across ALL LIVE observations for one signal source, or null if
+ * this source has never been LIVE-observed (in which case it is never "fresh" — always collect).
+ *
+ * V2-2B.1: backfilled observations (collection_version "github-v1-backfill") are deliberately
+ * EXCLUDED here — a real bug found while building backfill. Backfill rows are written with
+ * `observed_at = now` (honestly — that's when we ran the backfill), which otherwise makes the
+ * source look freshly-collected the instant backfill finishes, silently skipping that source's own
+ * first LIVE "today" collection in the very same pass. Backfill supplements history; it is not
+ * itself a live collection and must never satisfy the freshness check. */
 export function mostRecentObservedAt(history: readonly Observation[], signalSourceId: number): string | null {
   let best: string | null = null;
   for (const o of history) {
     if (o.signal_source_id !== signalSourceId) continue;
+    if (o.collection_version.endsWith("-backfill")) continue;
     if (best === null || o.observed_at > best) best = o.observed_at;
   }
   return best;
