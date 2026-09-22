@@ -1,0 +1,57 @@
+name: Signal observation run
+
+# V2-2A.1 — operates ONLY the backend signal-observation process (src/signals-main.ts).
+# It never touches Frontend V1, never runs discovery (V2-1), and never makes an Anthropic API
+# call. Writes go only to signal_sources/observations/signals via the existing SignalStore —
+# companies and discovery_events are never touched (see root CLAUDE.md, V2-2A.1 section).
+#
+# NOT LIVE until: (1) this file is committed to the default branch, and (2) SUPABASE_URL and
+# SUPABASE_SERVICE_ROLE_KEY exist as repository secrets. See the V2-2A.1 report for exact steps.
+
+on:
+  schedule:
+    # Once daily. 13:17 UTC (~9:17 AM EDT / 8:17 AM EST) — an off-the-hour time (GitHub's own
+    # guidance: avoid scheduling at the top of the hour, when load — and therefore delay — is
+    # highest). GitHub Actions does not guarantee the exact minute for scheduled runs, especially
+    # during high load; a run "once daily, approximately around this time" is the real guarantee,
+    # not a precise clock. Note the US Eastern offset shifts with daylight saving — 13:17 UTC is
+    # 9:17 AM during EDT (roughly mid-March to early November) and 8:17 AM during EST otherwise.
+    - cron: "17 13 * * *"
+  # Manual runs for testing/on-demand collection, from the Actions tab.
+  workflow_dispatch: {}
+
+# Least privilege: this job only reads this repository (to check it out) and uses the built-in
+# GITHUB_TOKEN solely as a bearer credential for READS against api.github.com (public data on
+# OTHER repos/orgs) — it needs no write access to anything in this repository.
+permissions:
+  contents: read
+
+# Prevents two runs (a schedule firing while a manual run is still going, or vice versa) from
+# ever overlapping and double-collecting.
+concurrency:
+  group: signals-observation-run
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run signal observation pass
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # The token GitHub Actions provisions automatically for this run — sufficient for our
+          # GitHub collector (1,000 requests/hour/repository vs. 60/hour unauthenticated), so no
+          # separate personal access token is created or needed.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run signals

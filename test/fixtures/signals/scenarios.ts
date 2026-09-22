@@ -16,7 +16,9 @@ export function obs(companyId: number, signalSourceId: number, metricName: strin
     metric_name: metricName,
     numeric_value: value,
     text_value: extra.text_value ?? null,
-    observed_at: new Date(NOW.getTime() - daysAgo * DAY_MS).toISOString(),
+    // `extra.observed_at` (an exact timestamp) wins when given — some tests need hour-level
+    // precision (freshness/cooldown boundaries) that a whole-day `daysAgo` can't express.
+    observed_at: extra.observed_at ?? new Date(NOW.getTime() - daysAgo * DAY_MS).toISOString(),
     source_timestamp: extra.source_timestamp ?? null,
     collection_version: extra.collection_version ?? "test-v1",
     raw_payload_ref: null,

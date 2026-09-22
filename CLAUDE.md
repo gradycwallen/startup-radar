@@ -382,6 +382,100 @@ fetch injection, no real network, no real Supabase, no Anthropic calls whatsoeve
 
 ---
 
+## 5B. Current V2-2A.1 state (Automated Observation Runs) — [BUILT, not yet CONFIGURED/LIVE]
+
+Operationalizes V2-2A: a CLI that revisits known companies over time and a scheduled workflow to
+run it unattended. Adds **no new signal families, no schema changes, no frontend changes** — it is
+purely "run the existing V2-2A machinery safely, repeatedly, on its own." Three precise states,
+never conflated: **BUILT** (the code exists and is tested) — true as of this writing. **CONFIGURED**
+(the GitHub Actions workflow is committed AND the required repository secrets exist) — not yet
+true; see the delivery report for the exact manual step outstanding. **LIVE** (a real scheduled or
+dispatched run has actually completed successfully in Actions) — not yet true, and won't be claimed
+true here until it has.
+
+**CLI** (`npm run signals`, `src/signals-main.ts`): argv/env/logging only — all policy lives in
+`src/signals/orchestrate.ts`, which the CLI calls and nothing else. Flags: `--dry-run` (real
+resolution/collection reads, zero writes), `--company <id|domain>`, `--limit <n>`, `--force`
+(bypasses freshness — never the default), `--log-dir`, `--json`. Deliberately has **no** `--record`/
+`--replay`: V2-2A's own fixture-based test suite already gives full offline reproducibility at the
+unit/orchestration level, and building a second, CLI-level HTTP+DB snapshot system for this specific
+milestone was judged not worth the added surface — a documented scope decision, not an oversight.
+
+**Monitoring policy** (`src/signals/orchestrate.ts: runObservationPass`): serial, one company fully
+at a time (only 10 companies today; correctness over speed). For each company: attempt resolution
+**only** if it has zero active sources (never re-resolve an already-resolved source); for each
+resolved/existing source, collect only if stale (see freshness below); derive signals from the
+**full** accumulated history every time, deterministic rules unchanged from V2-2A. One company's or
+one source's failure is caught and recorded, never stops the run — see "failure classification"
+below.
+
+**Freshness/cooldown** (`src/signals/freshness.ts`): centralized at **`COLLECTION_FRESHNESS_HOURS =
+22`** — inside the requested 20-24h band, chosen to tolerate a scheduled job starting late (GitHub
+Actions does not guarantee the exact cron minute) without ever allowing two collections in one
+calendar day. Computed from `MAX(observed_at)` per source across existing `observations` — no new
+column needed. `--force` bypasses this for manual testing; it is never the default and the
+scheduled workflow never passes it.
+
+**Resolution cooldown — a known, disclosed limitation, not a migration**: unlike collection
+freshness, there is currently **no persisted record of a failed/unresolved resolution attempt** for
+a company that still has zero sources (the schema has no place to store "we tried and found
+nothing" without inventing a sentinel row against `signal_sources`' own CHECK constraints, which
+would be a schema change — explicitly deferred per this milestone's brief). Practically: at the
+intended once-daily cadence this is a small, bounded cost (≤3 requests to that company's own site
+per day) and not a real politeness problem: but running the CLI manually many times in quick
+succession WILL re-attempt resolution for every still-unresolved company each time, hitting their
+real homepages/careers pages again each run. A future migration could add a
+`last_resolution_attempt_at` column to close this gap; not built here.
+
+**Missing vs. zero** (the non-negotiable rule from this milestone's brief): a metric absent from one
+collection pass is UNKNOWN, never an implicit 0 — enforced structurally, not by a special case:
+`observations` is one row per (company, metric, time), written **only** when a collector actually
+obtained a value (a metric a collector couldn't retrieve is simply never pushed to its output — see
+`src/signals/sources/github.ts`'s handling of a `202` "still computing" response). Nothing in the
+observation/signal engine backfills, interpolates, or defaults a gap. `compareWindow`/
+`bestAvailableWindow` (`src/signals/velocity.ts`) only ever see rows that were actually written, so
+a gap is structurally invisible to them rather than needing to be filtered out. Proven by 7 explicit
+regression tests (`test/signals-missing-vs-zero.test.ts`) covering exactly the scenarios the brief
+named: missing previous/current metric, a newly-introduced metric, a temporarily-unavailable one
+reappearing, a legitimate observed zero staying distinguishable from unknown, and a new metric never
+corrupting an older, unrelated one's history.
+
+**Failure classification** (per company: `resolution` = `not_attempted` | `resolved_new` |
+`unresolved` | `no_supported_source` | `failed`; per source: `outcome` = `collected` |
+`skipped_fresh` | `failed`): "no supported source found" and "a request actually failed" are kept
+distinct on purpose — the former is a normal, expected outcome for most companies (most companies
+don't use Greenhouse/Lever/Ashby or have a discoverable GitHub presence), the latter is a real
+network/API problem worth noticing. Every company is wrapped in its own try/catch; every source
+within a company is wrapped in its own try/catch — one failure never stops the rest.
+
+**Signal dedup across runs** (`src/signals/dedup.ts`): application-level only, using
+`(company_id, signal_type, to_observation_id)` as a natural key — the orchestrator reads existing
+`signals` once per run and filters newly-derived ones against that key before inserting. This is
+NOT a database-enforced constraint (that would be a schema change, deferred per this milestone's
+brief); it is sufficient for a single serial CLI run, which is the only way this ever executes today.
+
+**Reliability fix found during this milestone's own live validation** (disclosed, not hidden): the
+very first live run of the new orchestrator hit a real transient database read failure. `SignalStore`
+originally had no retry for reads (only writes had a hard deadline, no retries — deliberately, since
+retrying a write without an idempotency key risks a duplicate row). Reads carry no such risk, so
+`SignalStore`'s three read methods now retry up to 3 times with exponential backoff, matching
+`src/db.ts: ReadOnlyDb#read`'s already-proven pattern exactly. Regression-tested.
+
+**GitHub Actions** (`.github/workflows/signals.yml`): daily cron (`17 6 * * *` UTC, an off-the-hour
+time) plus `workflow_dispatch` for manual runs; `permissions: contents: read` (least privilege);
+a concurrency group prevents overlapping runs; 15-minute job timeout; `actions/checkout@v4` +
+`actions/setup-node@v4` (Node 24, matching `package.json`'s `engines`) + `npm ci` + `npm run
+signals`. Uses the **built-in `GITHUB_TOKEN`** GitHub Actions provisions automatically (confirmed:
+1,000 requests/hour/repository, vs. 60/hour unauthenticated — comfortably sufficient at this
+project's scale) — no separate personal access token was created. **Required repository secrets:
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`** (same values as the root `.env`, added as GitHub
+repository secrets, never committed). The workflow file's YAML was validated and `npm ci`
+dry-run-verified against the committed lockfile; **no actual scheduled or dispatched run has
+completed** — see the delivery report for the exact remaining manual step and do not describe this
+automation as live until an Actions run has actually succeeded.
+
+---
+
 ## 6. AI / model philosophy
 
 - **Deterministic code does the work whenever it practically can.** The entire V2-1 funnel — parsing,
@@ -468,6 +562,7 @@ fetch injection, no real network, no real Supabase, no Anthropic calls whatsoeve
 | V2-1 (deterministic discovery funnel) | **[BUILT]** | RSS/Google-News/YC/Techstars providers, deterministic extraction/prefilter/clustering/dedup/domain-resolution/ranking, offline eval harness with measured recall. See §5. |
 | Signal-intelligence research | **[DONE — research/design only]** | A wide survey of "momentum/behavioral" signals (hiring, GitHub, website structure, funding/regulatory, community, etc.) beyond V2-1's event signals, with feasibility notes and a prioritized recommendation. Superseded the originally-planned V2-2 scope below — see the delivery report for the full analysis. |
 | V2-2A (Signal Foundation) | **[BUILT]** | The narrow first build from that research: source resolution + hiring (ATS) and GitHub observation collectors + a deterministic, versioned, explainable signal-derivation engine. No score, no alerts, no other signal families yet. See §5A. |
+| V2-2A.1 (Automated Observation Runs) | **[BUILT — CONFIGURED/LIVE pending]** | Operationalizes V2-2A: `npm run signals` CLI, monitoring/freshness policy, failure isolation, and a GitHub Actions daily workflow. Code and tests are done; the workflow is not yet committed and the required repository secrets are not yet confirmed configured — see §5B and the delivery report for the exact remaining step. |
 | V2-2B+ (remaining signal families, corroboration, a real score) | **[PLANNED, not yet scoped in detail]** | Website-structure monitoring, SEC Form D, cross-family corroboration, and eventually a transparent momentum/Radar score are all still research-stage ideas, not committed plans — see the V2-2A delivery report's "what remains" section. Do not start any of it without explicit approval. |
 | ~~V2-2 (Haiku triage / Sonnet escalation on funnel finalists)~~ | **superseded** | The originally-approved V2-2 scope (bounded AI triage/escalation directly on V2-1's funnel output) was reconsidered after the signal-intelligence research and replaced by V2-2A above. Entity-resolution AI fallback (a different, narrower idea) is architected in V2-2A but not implemented — see §5A. |
 | V2-3 | **[not yet scoped]** | Not defined by the user at time of writing. Do not invent scope for it. |
@@ -555,6 +650,17 @@ process — rather than pre-building for it now.
   `compareWindow` to accept a shorter gap than the requested window "close enough," and do not remove
   `isPersistent`'s check without understanding why (see §5A) — both exist specifically so a signal
   never overclaims a trend the data doesn't actually support.
+- **A metric absent from an observation is UNKNOWN, never zero.** Do not add code anywhere in
+  `src/signals/` that defaults a missing `numeric_value` to `0`, backfills a gap, or otherwise lets
+  "we didn't observe this" become indistinguishable from "we observed zero" (§5B). This is the one
+  rule the V2-2A.1 milestone treated as non-negotiable; it has 7 dedicated regression tests
+  (`test/signals-missing-vs-zero.test.ts`) — do not weaken or delete them.
+- **Never schedule the signals workflow more than once daily**, and never have it (or anything else)
+  call `--force` by default — `.github/workflows/signals.yml`'s cron and the CLI's own default are
+  both deliberately conservative; loosening either is a decision for the user, not a default to change.
+- **Do not claim the GitHub Actions automation is "live"** unless an actual scheduled or
+  `workflow_dispatch` run has completed successfully in the Actions tab — a committed workflow file
+  or configured secrets alone are "CONFIGURED," not "LIVE." See §5B's three-state distinction.
 
 ---
 
@@ -564,31 +670,41 @@ process — rather than pre-building for it now.
 calls have been made by the V2-1 funnel at any point; Phase 1's Claude-web pipeline is present and
 functional but is no longer the primary discovery path.
 
-**Signal foundation**: V2-2A (§5A) is complete — `src/signals/`, the three new tables (migration
-applied to the live database), tested, and live-verified against the real GitHub API and one real
-company. Not yet committed/pushed as of this writing; see the delivery report for the exact state.
+**Signal foundation**: V2-2A (§5A) is complete and committed/pushed (`34b6d16`) — `src/signals/`,
+the three new tables (migration applied to the live database), tested, and live-verified against
+the real GitHub API and one real company.
+
+**Automated observation runs**: V2-2A.1 (§5B) is code-complete and tested (`src/signals-main.ts`,
+`src/signals/orchestrate.ts`/`freshness.ts`/`dedup.ts`, `.github/workflows/signals.yml`), and has
+been run live locally against the real database. **Not yet committed/pushed as of this writing**,
+and the GitHub Actions automation is **BUILT but not yet CONFIGURED or LIVE** — the repository
+secrets it needs (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) could not be verified/set from this
+environment (no `gh` CLI / GitHub web access available here). See the delivery report for the exact
+manual step required before the first unattended run.
 
 **Frontend**: V1 (§10) is built at `frontend/` and has been committed and pushed to `origin/main`
 (`1fc56e8`) — build/typecheck/lint clean, verified against live Supabase data, light/dark theme
-implemented and verified. Not touched by V2-2A.
+implemented and verified. Not touched by V2-2A or V2-2A.1.
 
 **Logical next decisions** (all require explicit user approval before any code is written):
-1. Whether/how to scope **V2-2B+** — which remaining signal families (website-structure monitoring,
+1. Configure the two repository secrets and confirm the first real GitHub Actions run succeeds
+   (§5B) — the one concrete blocker to V2-2A.1 actually running unattended.
+2. Whether/how to scope **V2-2B+** — which remaining signal families (website-structure monitoring,
    SEC Form D, others from the research report) to build next, if any, and when cross-family
    corroboration and a real transparent momentum score are worth attempting.
-2. Whether to wire in the architected-but-unused AI entity-resolution fallback (§5A), and under what
+3. Whether to wire in the architected-but-unused AI entity-resolution fallback (§5A), and under what
    cost ceiling — deterministic resolution alone leaves some real companies' sources unresolved.
-3. How to close the domain-resolution gap in V2-1's OWN funnel (5/8 primary finalists currently
+4. How to close the domain-resolution gap in V2-1's OWN funnel (5/8 primary finalists currently
    unresolved) — a separate, still-open item from before V2-2A, not superseded by it.
-4. Whether to expand the Google News query set / RSS registry to close V2-1 coverage gaps like heylogin.
-5. Whether/when V2-2A's signals should be surfaced in the frontend at all (a "Signals" panel was
+5. Whether to expand the Google News query set / RSS registry to close V2-1 coverage gaps like heylogin.
+6. Whether/when V2-2A's signals should be surfaced in the frontend at all (a "Signals" panel was
    explicitly out of scope for V2-2A) and whether/when a real backend-derived score should exist.
-6. When to approve **controlled database writes to `companies`/`discovery_events`** ("Phase 2") — still
-   not implemented anywhere in code. (V2-2A's writes to the three new signal tables are a separate,
-   narrower, already-approved exception — see §11.)
+7. When to approve **controlled database writes to `companies`/`discovery_events`** ("Phase 2") — still
+   not implemented anywhere in code. (V2-2A/V2-2A.1's writes to the three new signal tables are a
+   separate, narrower, already-approved exception — see §11.)
 
-Note on this document's provenance: the repository's git history is thin (two commits total — the
-project was built interactively and committed after the fact), so §4's "history and why" is
+Note on this document's provenance: the repository's git history is thin (four commits as of V2-2A —
+the project was built interactively and committed after the fact), so §4's "history and why" is
 reconstructed primarily from code comments, the README, and this project's own prior working sessions
 rather than from a granular commit log. Treat it as accurate to that history, but be aware the git log
 itself won't independently corroborate the narrative.

@@ -4,18 +4,21 @@ import type { DerivedSignal, Observation, SignalSource } from "./types.ts";
 
 /**
  * ============================================================================================
- * THE ONLY FILE UNDER src/ ALLOWED TO WRITE TO THE DATABASE — and only to the three V2-2A
- * tables (signal_sources, observations, signals), never companies or discovery_events. This is
+ * THE data-access layer for the three V2-2A tables (signal_sources, observations, signals) —
+ * reads AND writes both live here, never companies or discovery_events. THE ONLY FILE UNDER src/
+ * ALLOWED TO WRITE TO THE DATABASE, and only via insert/upsert into these three tables. This is
  * a deliberate, narrow exception to V2-1's "read-only" guard, not a weakening of it: see
- * test/signals.test.ts's "V2-2A GUARD" tests, which assert (a) no other file under src/ contains
+ * test/readonly.test.ts's "V2-2A GUARD" tests, which assert (a) no other file under src/ contains
  * a write-capable call, and (b) THIS file's own writes never reference "companies" or
- * "discovery_events" as a table name, only the three new tables.
+ * "discovery_events" as a table name, only the three new tables. (The read methods below are not
+ * write-capable calls, so they don't need — and don't get — that same restriction; they exist so
+ * the orchestrator (V2-2A.1) never needs a second file touching these tables at all.)
  * ============================================================================================
  *
- * `observations` and `signals` are meant to be append-only (see root CLAUDE.md's V2-2A section
- * once written): this class exposes no update/delete for either, only insert. `signal_sources`
- * is the one mutable table (a resolution can be corrected/deactivated later), matching its DB
- * grants (SELECT/INSERT/UPDATE vs. SELECT/INSERT-only for the other two — see the migration).
+ * `observations` and `signals` are meant to be append-only (see root CLAUDE.md's V2-2A section):
+ * this class exposes no update/delete for either, only insert. `signal_sources` is the one mutable
+ * table (a resolution can be corrected/deactivated later), matching its DB grants
+ * (SELECT/INSERT/UPDATE vs. SELECT/INSERT-only for the other two — see the migration).
  */
 
 export interface SignalStoreOptions {
@@ -66,6 +69,30 @@ export class SignalStore {
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  /**
+   * Reads retry (like src/db.ts's ReadOnlyDb#read: 3 attempts, exponential backoff) because a
+   * transient failure — a cold connection, one dropped packet — is a real, observed thing (this
+   * exact retry was added after a live validation run hit one) and a plain SELECT is safe to
+   * retry. Writes deliberately do NOT retry: insertObservations/insertSignals have no idempotency
+   * key, so blindly retrying an insert risks a duplicate row if the first attempt actually
+   * succeeded server-side but the client didn't see the response in time. (upsertSignalSource IS
+   * idempotent via its natural key, but is kept single-attempt too for the same conservative
+   * default as every other write in this codebase — retry could be added deliberately later.)
+   */
+  async #readWithRetry<T>(op: string, run: (signal: AbortSignal) => Promise<T>): Promise<T> {
+    const attempts = 3;
+    let lastErr: unknown;
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        return await this.#withDeadline(op, run);
+      } catch (err) {
+        lastErr = err;
+        if (i < attempts) await new Promise((r) => setTimeout(r, 400 * 2 ** (i - 1)));
+      }
+    }
+    throw lastErr instanceof Error ? lastErr : new Error(`${op} failed after ${attempts} attempts`);
   }
 
   /** Insert-or-return-existing on the (company_id, source_type, external_id) natural key — a
@@ -121,6 +148,44 @@ export class SignalStore {
       }));
       const { data, error } = await this.#client.from("signals").insert(rows).select().abortSignal(signal);
       if (error) throw new Error(`insertSignals: ${error.message}`);
+      return (data ?? []) as DerivedSignal[];
+    });
+  }
+
+  // ---- reads (SELECT only — orchestration needs these to decide what to resolve/collect/derive) ----
+
+  /** Every ACTIVE signal source for the given companies. Used to know what's already resolved,
+   * so resolution is only attempted for companies that genuinely have none yet. */
+  async getActiveSourcesForCompanies(companyIds: readonly number[]): Promise<SignalSource[]> {
+    if (companyIds.length === 0) return [];
+    return this.#readWithRetry("getActiveSourcesForCompanies", async (signal) => {
+      const { data, error } = await this.#client.from("signal_sources").select().in("company_id", companyIds as number[]).eq("active", true).abortSignal(signal);
+      if (error) throw new Error(`getActiveSourcesForCompanies: ${error.message}`);
+      return (data ?? []) as SignalSource[];
+    });
+  }
+
+  /** ALL observations for the given companies — at Startup Radar's current scale (a handful of
+   * companies, a few metrics each) this is cheap; revisit with a bounded time window if the table
+   * grows large enough for that to change. This is the ONLY place observation history is read, so
+   * freshness checks and signal derivation both see the exact same data. */
+  async getObservationHistoryForCompanies(companyIds: readonly number[]): Promise<Observation[]> {
+    if (companyIds.length === 0) return [];
+    return this.#readWithRetry("getObservationHistoryForCompanies", async (signal) => {
+      const { data, error } = await this.#client.from("observations").select().in("company_id", companyIds as number[]).abortSignal(signal);
+      if (error) throw new Error(`getObservationHistoryForCompanies: ${error.message}`);
+      return (data ?? []) as Observation[];
+    });
+  }
+
+  /** Every already-persisted signal for the given companies — used only to build the
+   * (company_id, signal_type, to_observation_id) dedup key set before inserting newly-derived
+   * signals, so re-running the orchestrator against unchanged history never double-inserts. */
+  async getSignalsForCompanies(companyIds: readonly number[]): Promise<DerivedSignal[]> {
+    if (companyIds.length === 0) return [];
+    return this.#readWithRetry("getSignalsForCompanies", async (signal) => {
+      const { data, error } = await this.#client.from("signals").select().in("company_id", companyIds as number[]).abortSignal(signal);
+      if (error) throw new Error(`getSignalsForCompanies: ${error.message}`);
       return (data ?? []) as DerivedSignal[];
     });
   }

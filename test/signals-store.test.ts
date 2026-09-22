@@ -89,3 +89,65 @@ test("SignalStore: a write that exceeds its deadline is aborted, not left hangin
   const store = new SignalStore("https://x.supabase.co", "k", { fetch: neverResolves, writeTimeoutMs: 20 });
   await assert.rejects(() => store.upsertSignalSource(source), /exceeded 20ms/);
 });
+
+// ---- reads (V2-2A.1) -------------------------------------------------------------------------------------------------
+
+test("SignalStore.getActiveSourcesForCompanies: filters by company_id IN (...) and active=true; an empty id list makes no request", async () => {
+  const captured: Captured[] = [];
+  const store = new SignalStore("https://x.supabase.co", "k", { fetch: fakeSupabaseFetch(captured, [{ ...source, id: 1 }]) });
+  assert.deepEqual(await store.getActiveSourcesForCompanies([]), []);
+  assert.equal(captured.length, 0);
+  const result = await store.getActiveSourcesForCompanies([42, 43]);
+  assert.equal(result.length, 1);
+  assert.match(captured[0]!.url, /signal_sources/);
+  assert.match(captured[0]!.url, /company_id=in/);
+  assert.match(captured[0]!.url, /active=eq\.true/);
+  assert.equal(captured[0]!.method, "GET");
+});
+
+test("SignalStore.getObservationHistoryForCompanies: reads observations for the given companies, empty list makes no request", async () => {
+  const captured: Captured[] = [];
+  const store = new SignalStore("https://x.supabase.co", "k", { fetch: fakeSupabaseFetch(captured, [{ id: 1, metric_name: "github_stars" }]) });
+  assert.deepEqual(await store.getObservationHistoryForCompanies([]), []);
+  assert.equal(captured.length, 0);
+  const result = await store.getObservationHistoryForCompanies([42]);
+  assert.equal(result.length, 1);
+  assert.match(captured[0]!.url, /observations/);
+});
+
+test("SignalStore.getSignalsForCompanies: reads signals for the given companies, empty list makes no request", async () => {
+  const captured: Captured[] = [];
+  const store = new SignalStore("https://x.supabase.co", "k", { fetch: fakeSupabaseFetch(captured, [{ id: 1, signal_type: "star_velocity_increase" }]) });
+  assert.deepEqual(await store.getSignalsForCompanies([]), []);
+  assert.equal(captured.length, 0);
+  const result = await store.getSignalsForCompanies([42]);
+  assert.equal(result.length, 1);
+  assert.match(captured[0]!.url, /(?<!observations\/)signals/);
+});
+
+test("SignalStore reads: a database error surfaces as a real rejection after retries are exhausted", async () => {
+  const captured: Captured[] = [];
+  const store = new SignalStore("https://x.supabase.co", "k", { fetch: fakeSupabaseFetch(captured, { message: "connection reset" }, 500) });
+  await assert.rejects(() => store.getActiveSourcesForCompanies([1]), /connection reset/);
+  assert.equal(captured.length, 3, "a persistently-failing read is attempted 3 times before giving up");
+});
+
+test("SignalStore reads: a transient failure that succeeds on retry does NOT surface as an error — regression for a real transient failure hit during live validation", async () => {
+  let calls = 0;
+  const fetchImpl = (async () => {
+    calls++;
+    if (calls < 2) throw new TypeError("fetch failed", { cause: new Error("ECONNRESET") });
+    return new Response(JSON.stringify([{ id: 1 }]), { status: 200, headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  const store = new SignalStore("https://x.supabase.co", "k", { fetch: fetchImpl });
+  const result = await store.getObservationHistoryForCompanies([1]);
+  assert.equal(result.length, 1, "the second attempt succeeded, so the read returns normally rather than throwing");
+  assert.equal(calls, 2);
+});
+
+test("SignalStore writes: a single failed attempt is NOT retried (writes lack an idempotency guarantee that would make retrying safe)", async () => {
+  const captured: Captured[] = [];
+  const store = new SignalStore("https://x.supabase.co", "k", { fetch: fakeSupabaseFetch(captured, { message: "server error" }, 500) });
+  await assert.rejects(() => store.insertObservations([{ company_id: 1, signal_source_id: 1, metric_name: "x", numeric_value: 1, text_value: null, observed_at: "2026-09-22T00:00:00Z", source_timestamp: null, collection_version: "v1", raw_payload_ref: null }]));
+  assert.equal(captured.length, 1, "a write is attempted exactly once, never retried");
+});
