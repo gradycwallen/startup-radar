@@ -1,7 +1,8 @@
 import type { CompanyWithEvents } from "./data/types";
 import { daysSince } from "./derive/recency";
+import { compareMomentumDesc } from "./derive/momentum";
 
-export type SortKey = "recent" | "confidence" | "name";
+export type SortKey = "momentum" | "recent" | "confidence" | "name";
 
 export interface CompanyFilters {
   q: string;
@@ -12,13 +13,17 @@ export interface CompanyFilters {
   sort: SortKey;
 }
 
+// Momentum is the default sort for the main Radar/Explore experience — see
+// src/lib/derive/momentum.ts. Verified against the live database before making this the default
+// (see the Momentum delivery report): recently-discovered, well-corroborated, multi-signal
+// companies rank above old, thin, single-source ones, which is the whole point of the feature.
 export const DEFAULT_FILTERS: CompanyFilters = {
   q: "",
   category: null,
   eventType: null,
   minConfidence: null,
   maxAgeDays: null,
-  sort: "recent",
+  sort: "momentum",
 };
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -38,7 +43,7 @@ export function parseFilters(params: RawSearchParams): CompanyFilters {
   const maxAgeRaw = first(params.maxAge);
   const maxAgeDays = maxAgeRaw !== undefined && !Number.isNaN(Number(maxAgeRaw)) ? Number(maxAgeRaw) : null;
   const sortRaw = first(params.sort);
-  const sort: SortKey = sortRaw === "confidence" || sortRaw === "name" ? sortRaw : "recent";
+  const sort: SortKey = sortRaw === "confidence" || sortRaw === "name" || sortRaw === "recent" ? sortRaw : "momentum";
   return { q, category, eventType, minConfidence, maxAgeDays, sort };
 }
 
@@ -69,8 +74,11 @@ export function filterCompanies(companies: readonly CompanyWithEvents[], filters
       sorted.sort((a, b) => a.name.localeCompare(b.name));
       break;
     case "recent":
-    default:
       sorted.sort((a, b) => b.discoveredAt.localeCompare(a.discoveredAt));
+      break;
+    case "momentum":
+    default:
+      sorted.sort((a, b) => compareMomentumDesc(a, b, now));
   }
   return sorted;
 }

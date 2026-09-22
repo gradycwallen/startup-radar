@@ -3,6 +3,7 @@ import type { CompanyWithEvents } from "@/lib/data/types";
 import { ConfidenceBadge } from "@/components/company/confidence-badge";
 import { categoryClasses } from "@/lib/derive/category-color";
 import { recencyLabel } from "@/lib/derive/recency";
+import { MomentumMeta } from "@/components/company/momentum-meta";
 
 export function ExploreCard({ company }: { company: CompanyWithEvents }) {
   return (
@@ -19,6 +20,10 @@ export function ExploreCard({ company }: { company: CompanyWithEvents }) {
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         {company.category ? <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${categoryClasses(company.category)}`}>{company.category}</span> : null}
         <ConfidenceBadge confidence={company.confidence} />
+      </div>
+
+      <div className="mt-2.5 border-t border-line/60 pt-2.5">
+        <MomentumMeta company={company} />
       </div>
     </Link>
   );

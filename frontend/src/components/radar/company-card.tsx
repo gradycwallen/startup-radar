@@ -4,6 +4,7 @@ import { ConfidenceBadge } from "@/components/company/confidence-badge";
 import { SignalBadge } from "@/components/company/signal-badge";
 import { categoryClasses } from "@/lib/derive/category-color";
 import { recencyLabel } from "@/lib/derive/recency";
+import { MomentumMeta } from "@/components/company/momentum-meta";
 
 /** The primary event to show inline on the feed — the most recent one. */
 function primaryEvent(company: CompanyWithEvents) {
@@ -42,6 +43,10 @@ export function CompanyCard({ company }: { company: CompanyWithEvents }) {
         {company.category ? <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${categoryClasses(company.category)}`}>{company.category}</span> : null}
         {event ? <SignalBadge eventType={event.eventType} short /> : null}
         {company.discoverySource ? <span className="text-xs text-ink-faint">via {company.discoverySource}</span> : null}
+      </div>
+
+      <div className="mt-2.5 border-t border-line/60 pt-2.5">
+        <MomentumMeta company={company} />
       </div>
     </Link>
   );

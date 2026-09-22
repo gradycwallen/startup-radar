@@ -7,6 +7,7 @@ import type { CompanyFilters, SortKey } from "@/lib/filters";
 import { eventTypeMeta } from "@/lib/derive/event-type";
 
 const SORTS: { value: SortKey; label: string }[] = [
+  { value: "momentum", label: "Momentum" },
   { value: "recent", label: "Most recent" },
   { value: "confidence", label: "Highest confidence" },
   { value: "name", label: "Name (A–Z)" },
@@ -51,7 +52,7 @@ export function CompanyFilterBar({ initial, categories, eventTypes, variant = "f
       if (merged.eventType) params.set("event", merged.eventType);
       if (merged.minConfidence !== null) params.set("minConfidence", String(merged.minConfidence));
       if (merged.maxAgeDays !== null) params.set("maxAge", String(merged.maxAgeDays));
-      if (merged.sort !== "recent") params.set("sort", merged.sort);
+      if (merged.sort !== "momentum") params.set("sort", merged.sort);
       const qs = params.toString();
       startTransition(() => router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false }));
     },
