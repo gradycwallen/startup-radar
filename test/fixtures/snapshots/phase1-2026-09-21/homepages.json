@@ -1,0 +1,72 @@
+{
+  "project-s.space": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://project-s.space/",
+    "finalDomain": "project-s.space",
+    "text": "Project-S Munich-based space safety and orbital intelligence startup developing space-based radar payloads, AI-enabled orbital intelligence software, and robotic debris removal technology for space traffic management and satellite collision avoidance."
+  },
+  "heylogin.com": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://heylogin.com/",
+    "finalDomain": "heylogin.com",
+    "text": "heylogin heylogin is a Germany-based B2B password manager offering a hardware-based, passwordless login using end-to-end encryption and 2-factor security by default, developed and hosted in Germany with GDPR compliance."
+  },
+  "fin.com": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://fin.com/",
+    "finalDomain": "fin.com",
+    "text": "Fin.com Fin.com is a US (New York-based) payments infrastructure company providing a unified orchestration layer for cross-border money movement, combining local payment rails, USD virtual accounts, SWIFT, and stablecoin settlement."
+  },
+  "useaiir.com": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://useaiir.com/",
+    "finalDomain": "useaiir.com",
+    "text": "Aiir An AI platform for investor relations at asset managers, automating investor due diligence (DDQs, ESGs, ODDs), answer bank management, performance reporting, and LP requests."
+  },
+  "ollama.com": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://ollama.com/",
+    "finalDomain": "ollama.com",
+    "text": "Ollama"
+  },
+  "empirik.ai": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://empirik.ai/",
+    "finalDomain": "empirik.ai",
+    "text": "Empirik Empirik is an AI infrastructure reliability/observability platform, an 'autonomous infrastructure engineer' that tracks system changes and infers their ripple effects across cloud, on-premises, and SaaS environments to predict and prevent outages before they happen."
+  },
+  "gaiadynamics.ai": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://gaiadynamics.ai/",
+    "finalDomain": "gaiadynamics.ai",
+    "text": "Gaia Dynamics Gaia Dynamics is an AI-powered trade compliance platform that helps importers, exporters, logistics providers, customs brokerages, consultants, and law firms verify trade data, manage compliance workflows, and evaluate opportunities across global trade."
+  },
+  "scrolled.org": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://scrolled.org/",
+    "finalDomain": "scrolled.org",
+    "text": "ScrollEd A Palo Alto-based startup that has built an app converting textbooks, PDFs and other text files into a short-form, vertical scrolling feed of AI-generated video, audio, text and quizzes, aimed at students, educational institutions and corporate training programs."
+  },
+  "typesafe.ai": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://typesafe.ai/",
+    "finalDomain": "typesafe.ai",
+    "text": "TypeSafe AI TypeSafe AI is an AI lab building machine-native, composable intelligence designed to be integrated directly into software systems as a reliable, efficient computing primitive rather than a conversational assistant, with its first model called Jev."
+  },
+  "sunzu.com": {
+    "reachable": true,
+    "status": 200,
+    "finalUrl": "https://sunzu.com/",
+    "finalDomain": "sunzu.com",
+    "text": "Sunzu Sunzu is an AI user research platform that lets product teams run synthetic depth interviews, concept tests, UX tests and ad tests to get user insights in minutes, via a web app or an MCP integration for AI assistants."
+  }
+}

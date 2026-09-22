@@ -1,0 +1,16 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# dependencies / build
+node_modules/
+dist/
+
+# run output
+logs/
+
+# OS / editor
+.DS_Store
+*.log
+.mcp.json

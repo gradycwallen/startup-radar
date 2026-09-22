@@ -1,0 +1,30 @@
+{
+  "name": "startup-radar-scout",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Startup Radar Scout: discovers emerging startups from current public web information.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "scout": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "funnel": "tsx src/funnel-main.ts",
+    "eval": "tsx src/eval/run-eval.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
+    "@supabase/supabase-js": "^2.116.0",
+    "fast-xml-parser": "^5.11.1",
+    "node-html-parser": "^9.0.4",
+    "tldts": "^7.4.14",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

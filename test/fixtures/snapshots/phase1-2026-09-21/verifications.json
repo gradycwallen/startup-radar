@@ -1,0 +1,272 @@
+{
+  "af76e66940df": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "Project-S",
+      "canonical_url": "https://project-s.space",
+      "description": "Munich-based space safety and orbital intelligence startup developing space-based radar payloads, AI-enabled orbital intelligence software, and robotic debris removal technology for space traffic management and satellite collision avoidance.",
+      "category": "space tech / space situational awareness",
+      "event_type": "funding",
+      "event_date": "2026-09-03",
+      "source_url": "https://finsmes.com/2026/09/project-s-raises-multi-million-euro-seed-funding-round.html",
+      "source_name": "FinSMEs",
+      "headline": "Project-S emerges from stealth with a multi-million-euro seed round led by Uni.Fund II",
+      "founded_year": null,
+      "founded_year_evidence": null,
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.92,
+      "discovery_reason": "Multiple independent space-industry outlets (SatNews, European Spaceflight, SpaceWatch.Global, FinSMEs) reported on the same day/week that Project-S emerged from stealth with a new seed funding round.",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://finsmes.com/2026/09/project-s-raises-multi-million-euro-seed-funding-round.html"
+    ]
+  },
+  "329be666e081": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "heylogin",
+      "canonical_url": "https://heylogin.com",
+      "description": "heylogin is a Germany-based B2B password manager offering a hardware-based, passwordless login using end-to-end encryption and 2-factor security by default, developed and hosted in Germany with GDPR compliance.",
+      "category": "Cybersecurity / Password Management",
+      "event_type": "product_launch",
+      "event_date": null,
+      "source_url": "https://vestbee.com/startups-of-the-month",
+      "source_name": "Vestbee",
+      "headline": "heylogin featured as a Vestbee 'Startup of the Month'",
+      "founded_year": null,
+      "founded_year_evidence": null,
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.85,
+      "discovery_reason": "heylogin was highlighted as a 'Startup of the Month' on Vestbee's platform, tagged as a Germany-based, seed-stage cybersecurity company.",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://vestbee.com/startups-of-the-month"
+    ]
+  },
+  "6aaecf55d6fb": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "Fin.com",
+      "canonical_url": "https://fin.com",
+      "description": "Fin.com is a US (New York-based) payments infrastructure company providing a unified orchestration layer for cross-border money movement, combining local payment rails, USD virtual accounts, SWIFT, and stablecoin settlement.",
+      "category": "fintech/payments infrastructure",
+      "event_type": "stealth",
+      "event_date": "2026-09-17",
+      "source_url": "https://fintechfutures.com/venture-capital-funding/fin-com-emerges-from-stealth-with-20m-in-seed-funding",
+      "source_name": "FinTech Futures",
+      "headline": "Fin.com emerges from stealth with $20m in seed funding led by Expa and Garrett Camp",
+      "founded_year": 2025,
+      "founded_year_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.96,
+      "discovery_reason": "Company announced its stealth exit and $20 million seed funding round on September 15-17, 2026, covered by multiple independent outlets including Fortune, FinTech Futures, Yahoo Finance, and PR Newswire.",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://fintechfutures.com/venture-capital-funding/fin-com-emerges-from-stealth-with-20m-in-seed-funding"
+    ]
+  },
+  "5a2817d28d0e": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "Aiir",
+      "canonical_url": "https://useaiir.com",
+      "description": "An AI platform for investor relations at asset managers, automating investor due diligence (DDQs, ESGs, ODDs), answer bank management, performance reporting, and LP requests.",
+      "category": "AI / Fintech (Investor Relations software for asset managers)",
+      "event_type": "accelerator",
+      "event_date": "2026-09-18",
+      "source_url": "https://techstars.com/newsroom/the-2026-class-of-the-abn-amro-techstars-future-of-finance-accelerator",
+      "source_name": "Techstars Newsroom",
+      "headline": "Aiir selected for the 2026 ABN AMRO + Techstars Future of Finance Accelerator cohort in Amsterdam",
+      "founded_year": null,
+      "founded_year_evidence": null,
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.9,
+      "discovery_reason": "Aiir was announced as part of the newly selected 2026 cohort of the ABN AMRO + Techstars Future of Finance Accelerator, published in Techstars' official newsroom.",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://techstars.com/newsroom/the-2026-class-of-the-abn-amro-techstars-future-of-finance-accelerator"
+    ]
+  },
+  "503ad0cfe5dd": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "Ollama",
+      "canonical_url": "https://ollama.com",
+      "description": null,
+      "category": null,
+      "event_type": "funding",
+      "event_date": "2026-07-09",
+      "source_url": "https://techcrunch.com/2026/07/09/popular-open-source-ai-developer-tool-ollama-raises-65m-grows-to-nearly-9m-users",
+      "source_name": "TechCrunch",
+      "headline": null,
+      "founded_year": null,
+      "founded_year_evidence": null,
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.95,
+      "discovery_reason": "Reported as a funding round on 2026-07-09 (reconstructed from the Phase 1 rejection record).",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://techcrunch.com/2026/07/09/popular-open-source-ai-developer-tool-ollama-raises-65m-grows-to-nearly-9m-users"
+    ]
+  },
+  "61b52e0bbc2a": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "Empirik",
+      "canonical_url": "https://empirik.ai",
+      "description": "Empirik is an AI infrastructure reliability/observability platform, an 'autonomous infrastructure engineer' that tracks system changes and infers their ripple effects across cloud, on-premises, and SaaS environments to predict and prevent outages before they happen.",
+      "category": "AI infrastructure / observability / DevOps",
+      "event_type": "funding",
+      "event_date": "2026-09-01",
+      "source_url": "https://techcrunch.com/2026/09/01/sequoia-incubated-empirik-launches-with-21m-to-predict-outages-before-they-happen",
+      "source_name": "TechCrunch",
+      "headline": "Sequoia-incubated Empirik spins out as an independent company with $21M seed round from Sequoia, Canapi Ventures, and Alumni Ventures",
+      "founded_year": 2023,
+      "founded_year_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.97,
+      "discovery_reason": "Multiple independent outlets (TechCrunch, PR Newswire, Dealroom, Pulse2) reported on September 1-2, 2026 that Empirik emerged from Sequoia's incubator and raised a $21M seed round.",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://techcrunch.com/2026/09/01/sequoia-incubated-empirik-launches-with-21m-to-predict-outages-before-they-happen"
+    ]
+  },
+  "896cd711a7dc": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "Gaia Dynamics",
+      "canonical_url": "https://gaiadynamics.ai",
+      "description": "Gaia Dynamics is an AI-powered trade compliance platform that helps importers, exporters, logistics providers, customs brokerages, consultants, and law firms verify trade data, manage compliance workflows, and evaluate opportunities across global trade.",
+      "category": "AI / trade compliance software",
+      "event_type": "funding",
+      "event_date": "2026-09-16",
+      "source_url": "https://prnewswire.com/news-releases/gaia-dynamics-raises-7m-to-expand-ai-platform-keeping-businesses-ahead-of-tariffs-and-trade-risk-302880240.html",
+      "source_name": "PR Newswire",
+      "headline": "Gaia Dynamics Raises $7M Oversubscribed Seed Round Led by Corazon Capital",
+      "founded_year": 2024,
+      "founded_year_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.93,
+      "discovery_reason": "Company announced the close of an oversubscribed $7 million seed funding round on 2026-09-16, publicized via an official PR Newswire release and corroborated by multiple independent outlets.",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://prnewswire.com/news-releases/gaia-dynamics-raises-7m-to-expand-ai-platform-keeping-businesses-ahead-of-tariffs-and-trade-risk-302880240.html"
+    ]
+  },
+  "3a922294154f": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "ScrollEd",
+      "canonical_url": "https://scrolled.org",
+      "description": "A Palo Alto-based startup that has built an app converting textbooks, PDFs and other text files into a short-form, vertical scrolling feed of AI-generated video, audio, text and quizzes, aimed at students, educational institutions and corporate training programs.",
+      "category": "edtech / AI",
+      "event_type": "product_launch",
+      "event_date": "2026-09-20",
+      "source_url": "https://techcrunch.com/2026/09/20/scrolled-wants-to-turn-textbooks-into-tiktok",
+      "source_name": "TechCrunch",
+      "headline": "ScrollEd, a Palo Alto startup, is launching its consumer app that turns textbooks/PDFs into a TikTok-style vertical learning feed, pitching at TechCrunch Disrupt's Startup Battlefield 200",
+      "founded_year": 2026,
+      "founded_year_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.9,
+      "discovery_reason": "Covered by TechCrunch on 2026-09-20 as one of the startups pitching at TechCrunch Disrupt's Startup Battlefield 200, describing its consumer app launch.",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://techcrunch.com/2026/09/20/scrolled-wants-to-turn-textbooks-into-tiktok"
+    ]
+  },
+  "60daef21b4e3": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "TypeSafe AI",
+      "canonical_url": "https://typesafe.ai",
+      "description": "TypeSafe AI is an AI lab building machine-native, composable intelligence designed to be integrated directly into software systems as a reliable, efficient computing primitive rather than a conversational assistant, with its first model called Jev.",
+      "category": "AI / machine learning (frontier AI lab)",
+      "event_type": "stealth",
+      "event_date": "2026-09-16",
+      "source_url": "https://hpcwire.com/aiwire/2026/09/16/typesafe-ai-emerges-from-stealth-with-40m-in-funding-with-new-model-for-composable-ai",
+      "source_name": "AIwire (HPCwire)",
+      "headline": "TypeSafe AI Emerges From Stealth With $40M in Seed Funding Led by DCVC, Unveils Composable AI Model 'Jev'",
+      "founded_year": null,
+      "founded_year_evidence": null,
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.93,
+      "discovery_reason": "The company publicly emerged from stealth on 2026-09-16 with a $40M seed funding announcement covered by AIwire/HPCwire and corroborated by a Business Wire release.",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://hpcwire.com/aiwire/2026/09/16/typesafe-ai-emerges-from-stealth-with-40m-in-funding-with-new-model-for-composable-ai"
+    ]
+  },
+  "9dc9429c816a": {
+    "verification": {
+      "is_real_company": true,
+      "rejection_reason": null,
+      "name": "Sunzu",
+      "canonical_url": "https://sunzu.com",
+      "description": "Sunzu is an AI user research platform that lets product teams run synthetic depth interviews, concept tests, UX tests and ad tests to get user insights in minutes, via a web app or an MCP integration for AI assistants.",
+      "category": "AI user research / product testing software",
+      "event_type": "accelerator",
+      "event_date": "2026-09-18",
+      "source_url": "https://cpr.org/2026/09/18/techstars-return-colorado-startup-week",
+      "source_name": "Colorado Public Radio (CPR News)",
+      "headline": "Sunzu, led by CEO Alex Street, pitched as part of the newly relaunched Techstars Boulder 2026 cohort at Colorado Startup Week",
+      "founded_year": null,
+      "founded_year_evidence": null,
+      "stage": "early_stage",
+      "stage_evidence": "Recorded in the Phase 1 run (supporting quote not preserved)",
+      "is_public_or_large_mature": false,
+      "confidence": 0.92,
+      "discovery_reason": "Sunzu's CEO was named and photographed pitching at the Colorado Startup Week Techstars Boulder panel, marking the company's inclusion in the accelerator's first relaunched Boulder cohort, as reported by CPR News.",
+      "corroborating_urls": [],
+      "notes": "Reconstructed from the Phase 1 run summary; verbatim model evidence was not preserved."
+    },
+    "retrieved_urls": [
+      "https://cpr.org/2026/09/18/techstars-return-colorado-startup-week"
+    ]
+  }
+}

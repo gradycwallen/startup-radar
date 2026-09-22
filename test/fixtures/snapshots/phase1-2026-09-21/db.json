@@ -1,0 +1,146 @@
+{
+  "companies": [
+    {
+      "id": 1,
+      "name": "Liquid Compute",
+      "domain": "liquidcompute.com"
+    },
+    {
+      "id": 2,
+      "name": "Dipole Labs",
+      "domain": "dipolelabs.com"
+    },
+    {
+      "id": 3,
+      "name": "GitHits",
+      "domain": "githits.com"
+    },
+    {
+      "id": 4,
+      "name": "Nori Robotics",
+      "domain": "norirobotics.com"
+    },
+    {
+      "id": 5,
+      "name": "Praxis Robotics",
+      "domain": "praxisrobotics.io"
+    },
+    {
+      "id": 6,
+      "name": "Arrakis",
+      "domain": "arrakis.tech"
+    },
+    {
+      "id": 7,
+      "name": "XDOF",
+      "domain": "xdof.ai"
+    },
+    {
+      "id": 8,
+      "name": "Ravel",
+      "domain": "ravelfuture.com"
+    },
+    {
+      "id": 9,
+      "name": "Glow",
+      "domain": "glow.io"
+    },
+    {
+      "id": 10,
+      "name": "Waddle Labs",
+      "domain": "waddlelabs.ai"
+    }
+  ],
+  "events": [
+    {
+      "id": 5,
+      "company_id": 1,
+      "event_type": "funding",
+      "event_date": "2026-09-21",
+      "source_url": "https://www.morningstar.com/news/business-wire/20260915989921/liquid-compute-launches-with-15m-to-build-a-regulated-exchange-for-ai-infrastructure",
+      "headline": "Liquid Compute (Fintech / AI Infrastructure): discovered via Business Wire (via Morningstar)",
+      "description": "Launched publicly on 15 Sep 2026 with a $15M seed co-led by FirstMark and Chemistry."
+    },
+    {
+      "id": 2,
+      "company_id": 2,
+      "event_type": "accelerator",
+      "event_date": "2026-09-21",
+      "source_url": "https://www.ycombinator.com/companies/dipole-labs",
+      "headline": "Dipole Labs (AI Hardware / Networking): discovered via Y Combinator",
+      "description": "Part of the YC Summer 2026 batch and named among the buzziest startups at Demo Day."
+    },
+    {
+      "id": 7,
+      "company_id": 3,
+      "event_type": "funding",
+      "event_date": "2026-09-21",
+      "source_url": "https://arcticstartup.com/githits-raises-e1-5m-pre-seed/",
+      "headline": "GitHits (Developer Tools / AI): discovered via ArcticStartup",
+      "description": "Announced a EUR 1.5M pre-seed in June 2026 and was reported in several outlets, including EU-Startups and Vendep's own post."
+    },
+    {
+      "id": 10,
+      "company_id": 4,
+      "event_type": "accelerator",
+      "event_date": "2026-09-21",
+      "source_url": "https://techcrunch.com/2026/09/13/the-9-buzziest-startups-from-y-combinators-latest-demo-day-according-to-vcs/",
+      "headline": "Nori Robotics (Consumer Robotics): discovered via TechCrunch",
+      "description": "Named among the buzziest startups at Y Combinator's Summer 2026 Demo Day."
+    },
+    {
+      "id": 9,
+      "company_id": 5,
+      "event_type": "accelerator",
+      "event_date": "2026-09-21",
+      "source_url": "https://www.ycombinator.com/companies/praxis-robotics",
+      "headline": "Praxis Robotics (Robotics / AI Data): discovered via Y Combinator",
+      "description": "Part of the YC Summer 2026 batch and named among the buzziest startups at Demo Day."
+    },
+    {
+      "id": 4,
+      "company_id": 6,
+      "event_type": "funding",
+      "event_date": "2026-09-21",
+      "source_url": "https://fortune.com/2026/07/22/arrakis-a-startup-betting-ais-biggest-payoff-is-in-industrial-sectors-not-office-work-emerges-from-stealth-with-38-million-in-venture-funding/",
+      "headline": "Arrakis (Industrial AI): discovered via Fortune",
+      "description": "Emerged from stealth on 22 Jul 2026 with a $30M Series A led by Blossom Capital, plus a $7.5M seed led by Accel."
+    },
+    {
+      "id": 1,
+      "company_id": 7,
+      "event_type": "funding",
+      "event_date": "2026-09-21",
+      "source_url": "https://techcrunch.com/2026/09/04/xdof-just-three-months-out-of-stealth-is-in-talks-for-a-series-b-at-a-1-2b-valuation/",
+      "headline": "XDOF (Robotics / AI Data): discovered via TechCrunch",
+      "description": "Reported on 4 Sep 2026 as in late-stage Series B talks at about $1.2B, three months after emerging from stealth with a $70M Series A."
+    },
+    {
+      "id": 3,
+      "company_id": 8,
+      "event_type": "funding",
+      "event_date": "2026-09-21",
+      "source_url": "https://www.prnewswire.com/news-releases/ravel-raises-8-2m-oversubscribed-seed-round-to-scale-purification-recycling-for-blended-textiles-302881246.html",
+      "headline": "Ravel (Climate / Materials): discovered via PR Newswire",
+      "description": "Announced an oversubscribed $8.2M seed round led by One Small Planet on 17 Sep 2026."
+    },
+    {
+      "id": 6,
+      "company_id": 9,
+      "event_type": "funding",
+      "event_date": "2026-09-21",
+      "source_url": "https://techcrunch.com/2026/07/22/glow-emerges-from-stealth-at-1-2b-valuation-to-challenge-endpoint-security-in-the-ai-era/",
+      "headline": "Glow (Cybersecurity): discovered via TechCrunch",
+      "description": "Emerged from stealth on 22 Jul 2026 with a $180M Series A at a $1.2B valuation."
+    },
+    {
+      "id": 8,
+      "company_id": 10,
+      "event_type": "accelerator",
+      "event_date": "2026-09-21",
+      "source_url": "https://www.ycombinator.com/companies/waddle-labs",
+      "headline": "Waddle Labs (Robotics / AI Software): discovered via Y Combinator",
+      "description": "Part of the YC Summer 2026 batch and named among the buzziest startups at Demo Day."
+    }
+  ]
+}

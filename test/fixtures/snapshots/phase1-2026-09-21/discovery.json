@@ -1,0 +1,273 @@
+{
+  "provider": "claude-web",
+  "lanes": [
+    {
+      "lane": "funding",
+      "status": "ok",
+      "elapsed_ms": 92045,
+      "leads": 6,
+      "usage": {
+        "inputTokens": 402318,
+        "outputTokens": 6823,
+        "cacheReadTokens": 0,
+        "webSearches": 6,
+        "webFetches": 1,
+        "apiCalls": 1
+      }
+    },
+    {
+      "lane": "launches",
+      "status": "ok",
+      "elapsed_ms": 139542,
+      "leads": 6,
+      "usage": {
+        "inputTokens": 584989,
+        "outputTokens": 6232,
+        "cacheReadTokens": 0,
+        "webSearches": 6,
+        "webFetches": 3,
+        "apiCalls": 1
+      }
+    },
+    {
+      "lane": "stealth",
+      "status": "ok",
+      "elapsed_ms": 39758,
+      "leads": 6,
+      "usage": {
+        "inputTokens": 107116,
+        "outputTokens": 2456,
+        "cacheReadTokens": 0,
+        "webSearches": 6,
+        "webFetches": 0,
+        "apiCalls": 1
+      }
+    },
+    {
+      "lane": "accelerator",
+      "status": "ok",
+      "elapsed_ms": 129407,
+      "leads": 6,
+      "usage": {
+        "inputTokens": 210411,
+        "outputTokens": 7723,
+        "cacheReadTokens": 0,
+        "webSearches": 6,
+        "webFetches": 5,
+        "apiCalls": 1
+      }
+    },
+    {
+      "lane": "open_source",
+      "status": "ok",
+      "elapsed_ms": 73740,
+      "leads": 6,
+      "usage": {
+        "inputTokens": 305809,
+        "outputTokens": 3847,
+        "cacheReadTokens": 0,
+        "webSearches": 6,
+        "webFetches": 0,
+        "apiCalls": 1
+      }
+    },
+    {
+      "lane": "news",
+      "status": "ok",
+      "elapsed_ms": 226772,
+      "leads": 6,
+      "usage": {
+        "inputTokens": 353176,
+        "outputTokens": 5942,
+        "cacheReadTokens": 0,
+        "webSearches": 6,
+        "webFetches": 1,
+        "apiCalls": 1
+      }
+    }
+  ],
+  "leads": [
+    {
+      "provider": "claude-web",
+      "lane": "funding",
+      "name": "Project-S",
+      "homepage_hint": null,
+      "event_type_hint": null,
+      "source_url": "https://finsmes.com/2026/09/project-s-raises-multi-million-euro-seed-funding-round.html",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "launches",
+      "name": "heylogin",
+      "homepage_hint": null,
+      "event_type_hint": null,
+      "source_url": "https://vestbee.com/startups-of-the-month",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "stealth",
+      "name": "Fin.com",
+      "homepage_hint": "https://fin.com",
+      "event_type_hint": null,
+      "source_url": "https://fintechfutures.com/venture-capital-funding/fin-com-emerges-from-stealth-with-20m-in-seed-funding",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "accelerator",
+      "name": "Aiir",
+      "homepage_hint": "https://useaiir.com",
+      "event_type_hint": null,
+      "source_url": "https://techstars.com/newsroom/the-2026-class-of-the-abn-amro-techstars-future-of-finance-accelerator",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "open_source",
+      "name": "Ollama",
+      "homepage_hint": "https://ollama.com",
+      "event_type_hint": null,
+      "source_url": "https://techcrunch.com/2026/07/09/popular-open-source-ai-developer-tool-ollama-raises-65m-grows-to-nearly-9m-users",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "news",
+      "name": "Empirik.ai",
+      "homepage_hint": "https://empirik.ai",
+      "event_type_hint": null,
+      "source_url": "https://neweconomies.co/p/this-week-in-startups-september-2026",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "funding",
+      "name": "Gaia Dynamics",
+      "homepage_hint": null,
+      "event_type_hint": null,
+      "source_url": "https://vcnewsdaily.com/gaia-dynamics/venture-capital-funding/qmsxxrcvwp",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "launches",
+      "name": "ScrollEd",
+      "homepage_hint": null,
+      "event_type_hint": null,
+      "source_url": "https://techcrunch.com/2026/09/20/scrolled-wants-to-turn-textbooks-into-tiktok",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "stealth",
+      "name": "TypeSafe AI",
+      "homepage_hint": "https://typesafe.ai",
+      "event_type_hint": null,
+      "source_url": "https://hpcwire.com/aiwire/2026/09/16/typesafe-ai-emerges-from-stealth-with-40m-in-funding-with-new-model-for-composable-ai",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "accelerator",
+      "name": "Sunzu",
+      "homepage_hint": null,
+      "event_type_hint": null,
+      "source_url": "https://cpr.org/2026/09/18/techstars-return-colorado-startup-week",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "open_source",
+      "name": "Langfuse",
+      "homepage_hint": "https://langfuse.com",
+      "event_type_hint": null,
+      "source_url": "https://en.wikipedia.org/wiki/ClickHouse",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "funding",
+      "name": "Ferry Health",
+      "homepage_hint": null,
+      "event_type_hint": null,
+      "source_url": "https://vcnewsdaily.com/ferry-health/venture-capital-funding/mmkdvknglt",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "launches",
+      "name": "PrismML",
+      "homepage_hint": null,
+      "event_type_hint": null,
+      "source_url": "https://techcrunch.com/2026/09/17/prismml-hopes-its-tiny-llm-could-change-how-we-all-use-ai",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    },
+    {
+      "provider": "claude-web",
+      "lane": "stealth",
+      "name": "TigerByte Cyber",
+      "homepage_hint": null,
+      "event_type_hint": null,
+      "source_url": "https://securityweek.com/tigerbyte-cyber-emerges-from-stealth-with-3-million-in-funding",
+      "source_name": null,
+      "event_date": null,
+      "headline": null,
+      "snippet": null,
+      "source_retrieved": true
+    }
+  ]
+}
