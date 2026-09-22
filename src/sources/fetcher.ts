@@ -14,6 +14,11 @@ export interface FetchResult {
   text: string;
   bytes: number;
   elapsed_ms: number;
+  /** The response's `Content-Type` header, verbatim (may include a charset parameter), or
+   * undefined when the response had none. Added for V2-2B.2's website monitoring, which needs to
+   * tell a real HTML page apart from a JSON/XML/other response without guessing from content
+   * alone; every other existing caller ignores this field, so it's purely additive. */
+  contentType?: string;
 }
 
 export interface FetchOptions {
@@ -60,7 +65,11 @@ export interface PoliteFetcherOptions {
   now?: () => number;
 }
 
-export const DEFAULT_USER_AGENT = "StartupRadarScout/0.2 (read-only startup feed reader)";
+// V2-2B.2: added contact info (the project's own repo URL) so an operator on the receiving end of
+// a request has somewhere to go, consistent with responsible-crawler practice. Kept as one shared
+// constant so every caller (source providers, website monitoring) presents the same identity —
+// see src/http.ts for the one other hardcoded UA string, updated to match.
+export const DEFAULT_USER_AGENT = "StartupRadarScout/0.3 (+https://github.com/gradycwallen/startup-radar; read-only startup feed reader)";
 
 export class PoliteFetcher implements Fetcher {
   readonly #fetch: typeof fetch;
@@ -156,7 +165,8 @@ export class PoliteFetcher implements Fetcher {
       stat.statuses[String(res.status)] = (stat.statuses[String(res.status)] ?? 0) + 1;
       stat.bytes += bytes;
       stat.elapsed_ms += elapsed;
-      return { url: res.url || url, status: res.status, text, bytes, elapsed_ms: elapsed };
+      const contentType = res.headers.get("content-type") ?? undefined;
+      return { url: res.url || url, status: res.status, text, bytes, elapsed_ms: elapsed, contentType };
     } catch (err) {
       const message = err instanceof Error ? (err.cause instanceof Error ? err.cause.message : err.message) : String(err);
       stat.statuses.ERR = (stat.statuses.ERR ?? 0) + 1;

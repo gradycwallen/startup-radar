@@ -117,10 +117,16 @@ async function main(): Promise<number> {
   if (limit !== undefined) companies = companies.slice(0, limit);
 
   const fetcher = new PoliteFetcher({ minDelayMs: 600 });
+  // V2-2B.2: a SEPARATE, more conservative fetcher for website structural monitoring — company
+  // homepages are many small, arbitrary third-party sites (not a handful of well-known APIs), so
+  // this errs slightly more polite than the shared default: ~1s per-host pacing, a shorter 15s
+  // timeout (bounded further by the website pass's own request cap), and a smaller 1MB response
+  // cap (a marketing homepage never legitimately needs more). See the design report §10.
+  const websiteFetcher = new PoliteFetcher({ minDelayMs: 1000, timeoutMs: 15_000, maxBytes: 1_000_000 });
   const store = new SignalStore(supabase.url, supabase.serviceRoleKey, { log });
 
   log.info("signals_run_start", { message: `${companies.length} companies, dry_run=${Boolean(values["dry-run"])}, force=${Boolean(values.force)}` });
-  const summary = await runObservationPass(companies, { fetcher, store, githubToken, log, signal: shutdown.signal }, { dryRun: Boolean(values["dry-run"]), force: Boolean(values.force) });
+  const summary = await runObservationPass(companies, { fetcher, websiteFetcher, store, githubToken, log, signal: shutdown.signal }, { dryRun: Boolean(values["dry-run"]), force: Boolean(values.force) });
 
   writeFileSync(join(logDir, `${runId}.signals.json`), redact(JSON.stringify(summary, null, 2)));
   shutdown.dispose();

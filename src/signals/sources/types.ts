@@ -7,6 +7,10 @@ export interface CollectedMetric {
   /** When the SOURCE says this value is as-of, if it reports one (e.g. a release's published_at).
    * Null when the source has no notion of this (e.g. a live count like "open jobs right now"). */
   sourceTimestamp: string | null;
+  /** V2-2B.2: small, normalized provenance/evidence for THIS metric (see types.ts:
+   * ObservationSchema's `metadata` field for the full rationale/size discipline). Optional —
+   * github/ATS collectors never set it and are completely unaffected. */
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface CollectionResult {

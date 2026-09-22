@@ -20,6 +20,7 @@ const SOURCE_TYPE_FAMILY: Record<SourceType, SignalFamily> = {
   greenhouse: "hiring",
   lever: "hiring",
   ashby: "hiring",
+  website: "website",
 };
 
 export type HistoryClass = "early_evidence" | "developing_history" | "longitudinal_history";

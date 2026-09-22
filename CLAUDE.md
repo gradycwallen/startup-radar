@@ -580,6 +580,112 @@ discovery providers touch `api.github.com`.
 
 ---
 
+## 5D. Current V2-2B.2 state (Website Structural Monitoring) — [BUILT, LIVE, COMPLETE]
+
+Adds a third signal family — `website` — alongside `hiring`/`github` (§5A). Fully deterministic:
+regex/heuristic page classification only, **no LLM, no browser rendering, no screenshots, no raw
+HTML storage**. Builds on the append-only `observations`/derived-`signals` architecture from §5A
+unchanged; no parallel history system was created.
+
+**Source model**: exactly **one `signal_sources` row of `source_type: "website"` per company**,
+identity = the company's own canonical `domain` (`resolution_method: "company_domain"`,
+`resolution_confidence: 1`) — unlike GitHub/ATS, this needs **zero network requests to create**
+(the domain is already known), so it is created unconditionally for every company, independent of
+whatever else that company has.
+
+**Five semantic page types tracked**, plus one homepage-level boolean:
+`pricing`, `enterprise`, `security`/trust, `customers`/case-studies, `careers` (low corroboration
+tier — see below), and `website_homepage_prelaunch` (waitlist/"coming soon" language on the
+homepage). Pages are resolved deterministically from homepage nav links + `sitemap.xml` + a single
+conventional-path probe per unresolved type, capped at **12 requests/company/pass** (typical
+6–9): `src/signals/website/{resolve,patterns,robots,soft404,extract,fingerprint,source}.ts`.
+
+**present / confirmed-absent / unknown — unknown is the default, never zero.** A page is only ever
+written as `absent` (numeric `0`) when a real probe on a *navigable* (≥5 internal links), non-SPA,
+English-or-unspecified-language homepage returns a genuine 404/410, a redirect back to the
+homepage, or matches a soft-404 baseline (one deliberately bogus path fetched once per pass and
+compared by title/H1). Anything short of that — a network failure, a block, a thin homepage, a
+non-English site — stays **unknown**, and `src/signals/sources/website.ts` **never writes a row**
+for an unknown page (identical discipline to the missing-vs-zero rule from V2-2B.1 — see §11).
+
+**Derived signals** (`src/signals/rules/website.ts`):
+- **One cold-start level signal**, `website_commercial_footprint_present_at_first_observation` —
+  fires at most once, only from a company's first successful ("ok") pass, only when a NAMED
+  combination is present (`enterprise_ready` = enterprise+security; `proven_commercial` =
+  pricing+customers) — never a point/score system, and never worded as "appeared."
+- **Six appearance-transition signals** — `website_pricing_page_appeared`,
+  `website_enterprise_page_appeared`, `website_security_page_appeared`,
+  `website_customer_proof_appeared`, `website_careers_page_appeared` (careers = low tier,
+  `metadata.tier`), and `website_prelaunch_to_public` (a website-level view of stealth→public,
+  worded around what the SITE showed — never claims the company was literally "in stealth"). Every
+  appearance requires a **confirmed-absent baseline followed by two consecutive confirmed-present
+  readings on the same `collection_version`**, and only the page's genuinely FIRST-ever appearance
+  qualifies (later flapping never re-fires). **No removal/disappearance signals exist** —
+  confirmed-absent rows are stored (useful to a future rule) but never turned into a "disappeared"
+  signal; removal is far more ambiguous than appearance (redesign vs. real change) and was
+  deliberately deferred, not overlooked.
+- However many website signals fire for one company, they count as **exactly ONE** active
+  corroboration family (`families.ts`'s existing distinct-family counting, unchanged) — the direct
+  continuation of source-richness-bias prevention from V2-2B.1.
+
+**Freshness — per-source-type, not the flat 22h github/ats cadence** (`src/signals/freshness.ts`):
+**166h** normal cadence, **22h** while a page-state change is unconfirmed OR a fetch is transiently
+failing (timeout/DNS/5xx), falling back to 166h after 3 consecutive failures. Computed from the
+source's own `website_fetch_outcome` history — no new column. GitHub/ATS's flat 22h is untouched.
+
+**Orchestrator fix (real bug, found and fixed before any live write)**: resolution eligibility used
+to be gated on "this company has no active source of ANY kind" — since a website source needs no
+network request and would be created for literally every company, that single flag would have
+**permanently blocked GitHub/ATS resolution from ever running again** the moment website monitoring
+shipped. Fixed to be per-source-class in `src/signals/orchestrate.ts`: the website source is
+created whenever missing, independent of everything else; GitHub/ATS resolution is attempted
+whenever a company has no *non-website* source yet, independent of whether its website source
+already exists. 4 dedicated regression tests.
+
+**Runs inside the existing daily `signals.yml` workflow** — no new GitHub Actions workflow, no new
+schedule. `src/signals-main.ts` constructs a second, more conservative `PoliteFetcher` for website
+requests only (~1s/host pacing, 15s timeout, 1MB cap) alongside the shared one GitHub/ATS already
+use; `FetchResult` gained an additive `contentType` field, and the shared User-Agent
+(`src/sources/fetcher.ts`, `src/http.ts`) now carries the project's repo URL as contact info.
+
+**Migration — additive, applied and verified live** (`v2_2b2_website_monitoring_additive`):
+`signal_sources.source_type` += `website`; `signal_sources.resolution_method` += `company_domain`;
+`signals.family` += `website`; **`observations` gained a nullable `metadata jsonb` column, capped
+at 4096 bytes** by a CHECK constraint (`observations_metadata_size`) — holds only small normalized
+evidence (resolution method, path, final URL, status, truncated title/H1, verification checks,
+language, nav-link count, `nav_fingerprint`), **never raw HTML/body text/screenshots**. Grants/RLS
+unchanged (`service_role` stays append-only on `observations`/`signals`, SELECT/INSERT/UPDATE on
+`signal_sources`; `anon`/`authenticated` still get nothing). `nav_fingerprint`
+(`src/signals/website/fingerprint.ts`) is a SHA-256 of the normalized internal-link path set,
+diagnostic-only — **no rule anywhere reads it**; a hash change is never itself a signal.
+
+**Live-validated**: dry-run + one capped live write against 5 real companies (githits.com,
+chamelio.ai, light-spring.com, spott.io, zeliq.com) before this was called done. Corrected page-state
+totals across the 5 (25 = 5 companies × 5 types): **present = 9, absent = 10, unknown = 6**. One
+real false positive was found during the dry-run and fixed *before* any write: a nav-link text match
+on "case study" resolved a company's own engineering blog post as its `customers` (case-studies)
+page — fixed by removing the bare "case study" text pattern (kept the stronger `/case-studies` path
+pattern) and by rejecting any text-matched candidate whose path is nested under `/blog/` for every
+page type; 4 regression tests added. The live write inserted 5 new `signal_sources`, 29 new
+`observations`, and 5 new `signals` (3 GitHub-level signals for githits.com — its first-ever scored
+pass, since `signals` had 0 rows before this milestone touched it — plus the commercial-footprint
+level signal for both spott.io and zeliq.com). `companies`/`discovery_events` were not touched.
+
+**Known limitations (disclosed, not silently accepted)**: robots.txt compliance was NOT retrofitted
+to the pre-existing GitHub/ATS homepage-scanning resolution fetch (`src/signals/resolution.ts`) —
+judged a larger, V2-2A-touching refactor than this milestone's scope, per the approved plan, and
+deferred rather than risking that proven path. Conservative semantic matching means some real,
+unusually-worded pages (a careers page that never says "open roles"/"hiring"/"join the team," for
+one real example hit during validation) stay `unknown` rather than false-negative into "absent" or
+falsely into "present" — a deliberate tradeoff, not a bug. No transition signal has fired from real
+elapsed time yet (all 6 are unit-tested against synthetic multi-day histories; a genuine multi-day
+observation hasn't had time to occur naturally). No domain-migration following (an off-domain
+redirect is detected and left unresolved, never followed). No browser-rendering fallback for
+JavaScript-heavy sites (a thin/SPA-shell homepage stays `unknown` across the board by design — see
+the delivery report for the reasoning against adding one now).
+
+---
+
 ## 6. AI / model philosophy
 
 - **Deterministic code does the work whenever it practically can.** The entire V2-1 funnel — parsing,
@@ -668,7 +774,8 @@ discovery providers touch `api.github.com`.
 | V2-2A (Signal Foundation) | **[BUILT]** | The narrow first build from that research: source resolution + hiring (ATS) and GitHub observation collectors + a deterministic, versioned, explainable signal-derivation engine. No score, no alerts, no other signal families yet. See §5A. |
 | V2-2A.1 (Automated Observation Runs) | **[BUILT, CONFIGURED, LIVE]** | Operationalizes V2-2A: `npm run signals` CLI, monitoring/freshness policy, failure isolation, and a GitHub Actions daily workflow (`17 13 * * *` UTC). Committed/pushed; secrets configured; a manual `workflow_dispatch` run has completed successfully. See §5B. |
 | V2-1.1 (Automated Discovery Runs) | **[BUILT, locally live-validated, not yet committed]** | Operationalizes V2-1: `npm run discover` CLI, conservative acceptance/write policy, hard run caps, and a GitHub Actions daily workflow (`17 12 * * *` UTC, not yet pushed). One capped local live run succeeded against the real database (3 companies, 17 events, $0 cost). See §5C and the delivery report for exact next steps before commit/push. |
-| V2-2B+ (remaining signal families, corroboration, a real score) | **[PLANNED, not yet scoped in detail]** | Website-structure monitoring, SEC Form D, cross-family corroboration, and eventually a transparent momentum/Radar score are all still research-stage ideas, not committed plans — see the V2-2A delivery report's "what remains" section. Do not start any of it without explicit approval. |
+| V2-2B.2 (Website Structural Monitoring) | **[BUILT, LIVE, COMPLETE]** | Deterministic `website` signal family: one source/company, 5 semantic page types + pre-launch marker, present/absent/unknown, one cold-start footprint signal, 6 appearance-transition signals, no removal signals, additive migration applied, live-validated on 5 real companies. No AI, no browser rendering. See §5D. |
+| V2-2B+ (SEC Form D, cross-family corroboration, a real score) | **[PLANNED, not yet scoped in detail]** | Website-structure monitoring (above) is now built. SEC Form D, cross-family corroboration, and eventually a transparent momentum/Radar score remain research-stage ideas, not committed plans — see the V2-2A delivery report's "what remains" section. Do not start any of it without explicit approval. |
 | ~~V2-2 (Haiku triage / Sonnet escalation on funnel finalists)~~ | **superseded** | The originally-approved V2-2 scope (bounded AI triage/escalation directly on V2-1's funnel output) was reconsidered after the signal-intelligence research and replaced by V2-2A above. Entity-resolution AI fallback (a different, narrower idea) is architected in V2-2A but not implemented — see §5A. |
 | V2-3 | **[not yet scoped]** | Not defined by the user at time of writing. Do not invent scope for it. |
 | Controlled database writes to `companies`/`discovery_events` ("Phase 2") | **[BUILT, narrow scope — V2-1.1]** | `src/discovery/store.ts` writes new companies + their initial events only, under hard caps, via `npm run discover`. Does not (yet) add events to already-existing companies — see §5C. Any broader write scope still requires explicit approval. |
@@ -765,7 +872,18 @@ process — rather than pre-building for it now.
   `src/signals/` that defaults a missing `numeric_value` to `0`, backfills a gap, or otherwise lets
   "we didn't observe this" become indistinguishable from "we observed zero" (§5B). This is the one
   rule the V2-2A.1 milestone treated as non-negotiable; it has 7 dedicated regression tests
-  (`test/signals-missing-vs-zero.test.ts`) — do not weaken or delete them.
+  (`test/signals-missing-vs-zero.test.ts`) — do not weaken or delete them. **V2-2B.2 extends this
+  to website page states**: an unresolved (unknown) page never gets a written `0` row — see §5D.
+- **A website page transition requires a confirmed-absent baseline AND two consecutive confirmed-present
+  readings on the same `collection_version`, and only the page's first-ever appearance qualifies.**
+  Do not loosen this to a single reading or an unconfirmed change — see §5D and
+  `src/signals/rules/website.ts: findFirstAppearance`. **Never add a website page-removal/disappearance
+  signal** without explicit approval — this was deliberately deferred as more ambiguous than
+  appearance, not overlooked.
+- **A company's website source must never block, or be blocked by, its GitHub/ATS resolution.** See
+  §5D's "orchestrator fix" — resolution eligibility in `src/signals/orchestrate.ts` is per source
+  class (website vs. non-website), not "does this company have any source at all." Do not
+  reintroduce a single combined eligibility check.
 - **Never schedule the signals or discovery workflows more than once daily**, and never have either
   call `--force`/bypass its caps by default — both workflows' crons and each CLI's own defaults are
   deliberately conservative; loosening either is a decision for the user, not a default to change.
@@ -805,15 +923,23 @@ See the delivery report for the exact next steps before commit/push.
 
 **Frontend**: V1 (§10) is built at `frontend/` and has been committed and pushed to `origin/main`
 (`1fc56e8`) — build/typecheck/lint clean, verified against live Supabase data, light/dark theme
-implemented and verified. Not touched by V2-2A or V2-2A.1.
+implemented and verified. Not touched by V2-2A, V2-2A.1, or V2-2B.2.
+
+**Website structural monitoring**: V2-2B.2 (§5D) is complete — deterministic `website` signal
+family, additive migration applied and verified live (`signal_sources.source_type` +=`website`,
+`.resolution_method` +=`company_domain`, `signals.family` +=`website`, `observations.metadata jsonb`
+capped at 4KB), the per-source-class resolution-eligibility fix, live-validated on 5 real companies
+(one real false positive found and fixed before any write — see §5D). 528/528 tests passing,
+typecheck clean, $0 external cost, zero Anthropic calls. Live DB counts after validation:
+`companies=18`, `discovery_events=47`, `signal_sources=7`, `observations=38`, `signals=5`.
 
 **Logical next decisions** (all require explicit user approval before any code is written):
 1. Review and, if approved, commit/push V2-1.1, then run `workflow_dispatch` on
    `.github/workflows/discovery.yml` and confirm it succeeds in the Actions tab (§5C) — the one
    concrete blocker to discovery automation actually running unattended.
-2. Whether/how to scope **V2-2B+** — which remaining signal families (website-structure monitoring,
-   SEC Form D, others from the research report) to build next, if any, and when cross-family
-   corroboration and a real transparent momentum score are worth attempting.
+2. Whether/how to scope the **remaining** V2-2B+ work — website-structure monitoring is now built
+   (§5D); SEC Form D, cross-family corroboration, and a real transparent momentum score are still
+   open, research-stage questions.
 3. Whether to wire in the architected-but-unused AI entity-resolution fallback (§5A), and under what
    cost ceiling — deterministic resolution alone leaves some real companies' sources unresolved.
 4. How to close the domain-resolution gap in V2-1's OWN funnel (5/8 primary finalists currently

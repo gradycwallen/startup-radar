@@ -86,37 +86,53 @@ const acmeGithubSource = (overrides: Partial<SignalSource> = {}): SignalSource =
   resolution_method: "homepage_link_confirmed", resolution_confidence: 0.95, resolution_evidence: "test", active: true, metadata: null, ...overrides,
 });
 
+// V2-2B.2: since a `website` source is now created automatically for every company (see
+// orchestrate.ts's "A1"), tests that are specifically about GITHUB/ATS behavior pre-seed an
+// already-resolved, FRESH website source+observation so it's skipped as fresh and doesn't add
+// noise to THOSE tests' collection/request counts. Tests that start a company from zero sources
+// (testing resolution itself) deliberately do NOT do this — the website source's own creation is
+// real, intended behavior there, and those tests' expected counts account for it directly.
+const acmeWebsiteSource = (overrides: Partial<SignalSource> = {}): SignalSource => ({
+  id: 601, company_id: 1, source_type: "website", external_id: "acmerobotics.com", canonical_url: "https://acmerobotics.com/",
+  resolution_method: "company_domain", resolution_confidence: 1, resolution_evidence: "test", active: true, metadata: null, ...overrides,
+});
+function freshWebsiteOutcomeObs(companyId: number, signalSourceId: number, now: Date): Observation {
+  return { id: 900 + signalSourceId, company_id: companyId, signal_source_id: signalSourceId, metric_name: "website_fetch_outcome", numeric_value: null, text_value: "ok", observed_at: new Date(now.getTime() - 2 * 3_600_000).toISOString(), source_timestamp: null, collection_version: "website-v1", raw_payload_ref: null, metadata: null };
+}
+
 // ---- fresh-source skipping / stale-source collection ----------------------------------------------------------------
 
 test("orchestrate: a source collected recently (within the freshness window) is skipped, not re-collected", async () => {
   const recentObs: Observation = { id: 1, company_id: 1, signal_source_id: 501, metric_name: "github_stars", numeric_value: 10, text_value: null, observed_at: new Date(NOW().getTime() - 2 * 3_600_000).toISOString(), source_timestamp: null, collection_version: "github-v1", raw_payload_ref: null };
-  const { store, calls } = fakeStore({ sources: [acmeGithubSource()], observations: [recentObs] });
-  const { fetcher, requested } = fakeFetcher({}); // no route needed — must never be called
+  const { store, calls } = fakeStore({ sources: [acmeGithubSource(), acmeWebsiteSource()], observations: [recentObs, freshWebsiteOutcomeObs(1, 601, NOW())] });
+  const { fetcher, requested } = fakeFetcher({}); // no route needed — must never be called (both sources are already fresh)
   const summary = await runObservationPass([ACME], { fetcher, store, now: NOW }, { dryRun: false, force: false });
-  assert.deepEqual([summary.collection.skipped_fresh, summary.collection.collected], [1, 0]);
+  assert.deepEqual([summary.collection.skipped_fresh, summary.collection.collected], [2, 0]);
   assert.deepEqual(requested, [], "a fresh source must not be fetched at all");
   assert.equal(calls.insertObservations, 0);
-  assert.equal(summary.companies[0]!.sources[0]!.outcome, "skipped_fresh");
+  assert.equal(summary.companies[0]!.sources.find((s) => s.source_type === "github_repo")!.outcome, "skipped_fresh");
 });
 
 test("orchestrate: a stale source (older than the freshness window) IS collected", async () => {
   const staleObs: Observation = { id: 1, company_id: 1, signal_source_id: 501, metric_name: "github_stars", numeric_value: 10, text_value: null, observed_at: new Date(NOW().getTime() - 25 * 3_600_000).toISOString(), source_timestamp: null, collection_version: "github-v1", raw_payload_ref: null };
-  const { store, calls } = fakeStore({ sources: [acmeGithubSource()], observations: [staleObs] });
+  // The website source is seeded FRESH here (166h cadence, last checked 2h ago) so this test stays
+  // focused on github's own staleness/collection behavior.
+  const { store, calls } = fakeStore({ sources: [acmeGithubSource(), acmeWebsiteSource()], observations: [staleObs, freshWebsiteOutcomeObs(1, 601, NOW())] });
   const { fetcher, requested } = fakeFetcher({ "https://api.github.com/repos/acme/widget": { status: 200, json: { stargazers_count: 20 } } });
   const summary = await runObservationPass([ACME], { fetcher, store, now: NOW }, { dryRun: false, force: false });
-  assert.deepEqual([summary.collection.collected, summary.collection.skipped_fresh], [1, 0]);
+  assert.deepEqual([summary.collection.collected, summary.collection.skipped_fresh], [1, 1]);
   assert.ok(requested.length > 0, "a stale source must actually be fetched");
   assert.equal(calls.insertObservations, 1);
 });
 
 test("orchestrate: re-running immediately after a successful collection skips it the second time — no duplicate collection during cooldown", async () => {
-  const { store } = fakeStore({ sources: [acmeGithubSource()] }); // no prior observations: first run must collect
+  const { store } = fakeStore({ sources: [acmeGithubSource()] }); // no prior observations: first run must collect; no website source yet either, so one gets created+collected too
   const { fetcher } = fakeFetcher({ "https://api.github.com/repos/acme/widget": { status: 200, json: { stargazers_count: 20 } } });
   const deps = { fetcher, store, now: NOW };
   const first = await runObservationPass([ACME], deps, { dryRun: false, force: false });
-  assert.equal(first.collection.collected, 1, "nothing was observed yet, so the first run must collect");
+  assert.equal(first.collection.collected, 2, "github AND the newly-created website source both collect on the first pass");
   const second = await runObservationPass([ACME], deps, { dryRun: false, force: false });
-  assert.deepEqual([second.collection.collected, second.collection.skipped_fresh], [0, 1], "immediately re-running must skip — the observation just written is still fresh");
+  assert.deepEqual([second.collection.collected, second.collection.skipped_fresh], [0, 2], "immediately re-running must skip BOTH sources — everything just written is still fresh");
 });
 
 test("orchestrate: --force bypasses freshness even immediately after a collection", async () => {
@@ -125,7 +141,7 @@ test("orchestrate: --force bypasses freshness even immediately after a collectio
   const deps = { fetcher, store, now: NOW };
   await runObservationPass([ACME], deps, { dryRun: false, force: false });
   const forced = await runObservationPass([ACME], deps, { dryRun: false, force: true });
-  assert.equal(forced.collection.collected, 1, "--force must re-collect regardless of freshness");
+  assert.equal(forced.collection.collected, 2, "--force must re-collect regardless of freshness — both github and the (now-existing) website source");
 });
 
 // ---- failure isolation -----------------------------------------------------------------------------------------------
@@ -133,7 +149,10 @@ test("orchestrate: --force bypasses freshness even immediately after a collectio
 test("orchestrate: one source failing does not stop the company's OTHER sources, or the rest of the run", async () => {
   const github = acmeGithubSource();
   const greenhouse = acmeGithubSource({ id: 502, source_type: "greenhouse", external_id: "acme" });
-  const { store } = fakeStore({ sources: [github, greenhouse] });
+  // ACME's website source is seeded fresh so this test stays focused on github/greenhouse; "other"
+  // starts from zero sources, so it also gets a NEW website source created+collected this pass
+  // (see the accounting below) — that is real, intended V2-2B.2 behavior, not noise to suppress.
+  const { store } = fakeStore({ sources: [github, greenhouse, acmeWebsiteSource()], observations: [freshWebsiteOutcomeObs(1, 601, NOW())] });
   const other: CompanyContext = { id: 2, name: "OtherCo", domain: "otherco.example" };
   const { fetcher } = fakeFetcher({
     "https://api.github.com/repos/acme/widget": { status: 200, json: { stargazers_count: 5 }, throws: true }, // simulated network failure
@@ -141,10 +160,11 @@ test("orchestrate: one source failing does not stop the company's OTHER sources,
     "https://otherco.example/": { status: 200, text: "<p>nothing here</p>" },
   });
   const summary = await runObservationPass([ACME, other], { fetcher, store, now: NOW }, { dryRun: false, force: false });
-  assert.deepEqual([summary.collection.failed, summary.collection.collected], [1, 1], "github fails but greenhouse still succeeds for the same company");
+  assert.deepEqual([summary.collection.failed, summary.collection.collected], [1, 2], "github fails but greenhouse still succeeds for ACME, and OtherCo's newly-created website source also collects");
   assert.equal(summary.companies[0]!.sources.find((s) => s.source_type === "github_repo")!.outcome, "failed");
   assert.equal(summary.companies[0]!.sources.find((s) => s.source_type === "greenhouse")!.outcome, "collected");
   assert.equal(summary.companies[1]!.resolution, "no_supported_source", "the second company is still processed normally after the first company's partial failure");
+  assert.equal(summary.companies[1]!.sources.find((s) => s.source_type === "website")!.outcome, "collected");
 });
 
 // ---- unresolved / no-supported-source company behavior ----------------------------------------------------------------
@@ -178,7 +198,11 @@ test("orchestrate: --dry-run performs real resolution/collection reads but write
   });
   const summary = await runObservationPass([nothingYet], { fetcher, store, now: NOW }, { dryRun: true, force: false });
   assert.equal(summary.dry_run, true);
-  assert.equal(summary.resolution.resolved_new_sources, 1, "resolution is still reported — a dry run previews what WOULD happen");
+  // 2 = the website source (created unconditionally, no network needed) + the github_org resolved
+  // via homepage link-scanning — resolution is still reported, a dry run previews what WOULD happen.
+  assert.equal(summary.resolution.resolved_new_sources, 2);
+  assert.ok(summary.companies[0]!.newly_resolved.some((r) => r.source_type === "website"));
+  assert.ok(summary.companies[0]!.newly_resolved.some((r) => r.source_type === "github_org"));
   assert.deepEqual([calls.upsertSignalSource, calls.insertObservations, calls.insertSignals], [0, 0, 0], "no store write method was ever called");
   assert.deepEqual([sources.length, observations.length, signals.length], [0, 0, 0], "the store's underlying data is untouched");
 });
@@ -242,7 +266,9 @@ test("orchestrate: a newly-resolved github_repo source is backfilled once, in th
   });
   const summary = await runObservationPass([acme], { fetcher, store, now: NOW }, { dryRun: false, force: false });
   assert.ok(summary.observations_backfilled > 0, "a source-supported backfill (commit history) should have been found and inserted");
-  assert.ok(summary.companies[0]!.newly_resolved[0]!.backfilled_observations > 0);
+  // A `website` source is also newly-resolved this pass (created unconditionally) — find the
+  // github_repo entry by source_type rather than assuming array position.
+  assert.ok(summary.companies[0]!.newly_resolved.find((r) => r.source_type === "github_repo")!.backfilled_observations > 0);
   const backfilled = observations.filter((o) => o.collection_version === "github-v1-backfill");
   assert.ok(backfilled.length > 0);
   assert.ok(backfilled.every((o) => o.source_timestamp !== null), "every backfilled row carries a real source_timestamp");
@@ -277,7 +303,7 @@ test("orchestrate: --dry-run previews backfill (real reads) but writes nothing, 
     "https://api.github.com/repos/acmerobotics/widget/releases?per_page=6": { status: 200, json: [] },
   });
   const summary = await runObservationPass([acme], { fetcher, store, now: NOW }, { dryRun: true, force: false });
-  assert.ok(summary.companies[0]!.newly_resolved[0]!.backfilled_observations > 0, "dry-run still PREVIEWS what backfill would find");
+  assert.ok(summary.companies[0]!.newly_resolved.find((r) => r.source_type === "github_repo")!.backfilled_observations > 0, "dry-run still PREVIEWS what backfill would find");
   assert.equal(summary.observations_backfilled, 0, "but the aggregate count of what was actually WRITTEN stays 0 in dry-run");
   assert.equal(calls.insertObservations, 0, "the store's insertObservations must never be called in dry-run");
   assert.equal(observations.length, 0, "nothing is actually persisted");
@@ -298,9 +324,63 @@ test("orchestrate: a backfill failure never blocks resolution or ongoing live co
     "https://api.github.com/repos/acmerobotics/widget/releases?per_page=6": { status: 200, json: {}, throws: true },
   });
   const summary = await runObservationPass([acme], { fetcher, store, now: NOW }, { dryRun: false, force: false });
-  assert.equal(summary.resolution.resolved_new_sources, 1, "resolution itself must still succeed");
-  assert.equal(summary.companies[0]!.newly_resolved[0]!.backfilled_observations, 0, "the whole backfill attempt failed (one bad endpoint aborts backfillGithubRepoHistory) — recorded honestly as zero, not a crash");
+  assert.equal(summary.resolution.resolved_new_sources, 2, "resolution itself must still succeed — website + github_org/repo");
+  assert.equal(summary.companies[0]!.newly_resolved.find((r) => r.source_type === "github_repo")!.backfilled_observations, 0, "the whole backfill attempt failed (one bad endpoint aborts backfillGithubRepoHistory) — recorded honestly as zero, not a crash");
   assert.equal(summary.companies[0]!.sources.find((s) => s.source_type === "github_repo")?.outcome, "collected", "live collection for this source still runs normally, unaffected by the backfill failure");
+});
+
+// ---- V2-2B.2: resolution-eligibility fix (website vs. GitHub/ATS must never suppress each other) --------------------
+
+test("orchestrator fix: a company that ALREADY has a website source still gets GitHub/ATS resolved (the bug this milestone fixes)", async () => {
+  const acme: CompanyContext = { id: 1, name: "Acme Robotics", domain: "acmerobotics.com" };
+  // Website was already resolved on some earlier run — before the fix, "any source exists" would
+  // have permanently blocked GitHub/ATS resolution from ever being attempted again.
+  const { store } = fakeStore({ sources: [acmeWebsiteSource()], observations: [freshWebsiteOutcomeObs(1, 601, NOW())] });
+  const { fetcher } = fakeFetcher({
+    "https://acmerobotics.com/": { status: 200, text: `<a href="https://github.com/acmerobotics">gh</a>` },
+    "https://api.github.com/orgs/acmerobotics": { status: 200, json: { blog: "https://acmerobotics.com", public_repos: 2 } },
+  });
+  const summary = await runObservationPass([acme], { fetcher, store, now: NOW }, { dryRun: false, force: false });
+  assert.equal(summary.companies[0]!.resolution, "resolved_new", "GitHub resolution must still be attempted and succeed, despite the pre-existing website source");
+  assert.ok(summary.companies[0]!.newly_resolved.some((r) => r.source_type === "github_org"));
+  assert.ok(!summary.companies[0]!.newly_resolved.some((r) => r.source_type === "website"), "the website source already existed — it must not be 're-resolved'");
+});
+
+test("orchestrator fix: a company that ALREADY has a GitHub source still gets a website source created", async () => {
+  const { store } = fakeStore({ sources: [acmeGithubSource()], observations: [{ id: 1, company_id: 1, signal_source_id: 501, metric_name: "github_stars", numeric_value: 10, text_value: null, observed_at: new Date(NOW().getTime() - 2 * 3_600_000).toISOString(), source_timestamp: null, collection_version: "github-v1", raw_payload_ref: null }] });
+  const { fetcher, requested } = fakeFetcher({});
+  const summary = await runObservationPass([ACME], { fetcher, store, now: NOW }, { dryRun: false, force: false });
+  assert.ok(summary.companies[0]!.newly_resolved.some((r) => r.source_type === "website"), "a website source must be created even though a non-website source already exists");
+  assert.equal(summary.companies[0]!.resolution, "not_attempted", "GitHub/ATS resolution is correctly NOT re-attempted — a non-website source already exists");
+  // The website SOURCE itself needs zero requests to create (it's the company's own known domain);
+  // the only requests seen here are the freshly-created source's own immediate COLLECTION pass
+  // (robots.txt + homepage) — never a GitHub/ATS homepage/careers link-scan, which would mean the
+  // fix regressed and re-triggered resolveCompanySources.
+  assert.deepEqual(requested, ["https://acmerobotics.com/robots.txt", "https://acmerobotics.com/"]);
+});
+
+test("orchestrator fix: a company with BOTH a website source and a non-website source attempts NEITHER resolution path again", async () => {
+  const { store } = fakeStore({ sources: [acmeGithubSource(), acmeWebsiteSource()], observations: [freshWebsiteOutcomeObs(1, 601, NOW())] });
+  const { fetcher, requested } = fakeFetcher({ "https://api.github.com/repos/acme/widget": { status: 200, json: { stargazers_count: 1 } } });
+  const summary = await runObservationPass([ACME], { fetcher, store, now: NOW }, { dryRun: false, force: false });
+  assert.equal(summary.resolution.resolved_new_sources, 0);
+  assert.deepEqual(summary.companies[0]!.newly_resolved, []);
+  assert.equal(summary.companies[0]!.resolution, "not_attempted");
+  assert.ok(!requested.some((u) => u.includes("acmerobotics.com/") && !u.includes("api.github.com")), "no homepage/careers link-scanning request was made — nothing needed (re-)resolving");
+});
+
+test("orchestrator fix: website source creation needs zero network requests, even for a brand-new company", async () => {
+  const brandNew: CompanyContext = { id: 9, name: "Brand New Co", domain: "brandnew.example" };
+  const { store } = fakeStore();
+  // No routes at all except a 404 default (from-scratch resolveCompanySources will still make ITS
+  // own homepage/careers requests — those are expected and unrelated to website-source creation).
+  const { fetcher, requested } = fakeFetcher({});
+  const summary = await runObservationPass([brandNew], { fetcher, store, now: NOW }, { dryRun: false, force: false });
+  assert.ok(summary.companies[0]!.newly_resolved.some((r) => r.source_type === "website" && r.resolution_method === "company_domain"));
+  // The only requests made are the WEBSITE COLLECTION pass's own (robots.txt + homepage) plus
+  // resolveCompanySources' homepage/careers scan — none of them are a "resolve the website source"
+  // request, because that step is pure/deterministic (the company's own known domain).
+  assert.ok(requested.length > 0, "some requests happen (collection/github-ats resolution), just not to resolve the website source itself");
 });
 
 // ---- graceful shutdown -----------------------------------------------------------------------------------------------

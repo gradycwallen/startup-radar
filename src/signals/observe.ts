@@ -3,9 +3,11 @@ import { collectAshby } from "./sources/ats/ashby.ts";
 import { collectGreenhouse } from "./sources/ats/greenhouse.ts";
 import { collectLever } from "./sources/ats/lever.ts";
 import { backfillGithubRepoHistory, collectGithubOrg, collectGithubRepo } from "./sources/github.ts";
+import { collectWebsite } from "./sources/website.ts";
 import type { CollectedMetric, CollectionResult } from "./sources/types.ts";
 import { deriveGithubLevelSignals, deriveGithubSignals } from "./rules/github.ts";
 import { deriveHiringLevelSignals, deriveHiringSignals } from "./rules/hiring.ts";
+import { deriveWebsiteLevelSignals, deriveWebsiteTransitionSignals } from "./rules/website.ts";
 import type { DerivedSignal, Observation, SignalSource } from "./types.ts";
 
 /**
@@ -37,6 +39,9 @@ function toObservations(metrics: readonly CollectedMetric[], source: SignalSourc
     // The full raw response IS preserved when snapshot recording is used (--record, like V2-1's
     // funnel CLI); this field would carry that request's key. See the V2-2A report.
     raw_payload_ref: null,
+    // V2-2B.2: only the website collector ever sets this (see sources/website.ts); every other
+    // collector's metrics have `metadata: undefined`, which normalizes to null here.
+    metadata: m.metadata ?? null,
   }));
 }
 
@@ -61,6 +66,9 @@ export async function collectForSource(source: SignalSource, fetcher: Fetcher, o
       break;
     case "ashby":
       result = await collectAshby(fetcher, source.external_id, signal);
+      break;
+    case "website":
+      result = await collectWebsite(fetcher, source.external_id, signal);
       break;
     default:
       return [];
@@ -106,5 +114,7 @@ export function deriveSignalsForCompany(companyId: number, history: readonly Obs
     ...deriveGithubSignals(companyId, history),
     ...deriveHiringLevelSignals(companyId, history),
     ...deriveGithubLevelSignals(companyId, history, now),
+    ...deriveWebsiteLevelSignals(companyId, history),
+    ...deriveWebsiteTransitionSignals(companyId, history),
   ];
 }

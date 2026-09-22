@@ -129,6 +129,13 @@ export class SignalStore {
       const rows = observations.map((o) => ({
         company_id: o.company_id, signal_source_id: o.signal_source_id, metric_name: o.metric_name, numeric_value: o.numeric_value,
         text_value: o.text_value, observed_at: o.observed_at, source_timestamp: o.source_timestamp, collection_version: o.collection_version, raw_payload_ref: o.raw_payload_ref,
+        // V2-2B.2: requires the additive `observations.metadata` migration (see the design report
+        // §19) to actually persist against the live table — do not deploy this ahead of that
+        // migration being applied, or every insert (including github/ats, which always send
+        // `metadata: null`) will fail with "column not found." Safe to ship together because this
+        // whole milestone is held back from commit/push until the migration is approved (§FINAL
+        // CHECKPOINT) and applied (Phase 3/5).
+        metadata: o.metadata ?? null,
       }));
       const { data, error } = await this.#client.from("observations").insert(rows).select().abortSignal(signal);
       if (error) throw new Error(`insertObservations: ${error.message}`);

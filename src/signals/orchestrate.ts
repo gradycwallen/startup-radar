@@ -1,16 +1,26 @@
 import type { Logger } from "../log.ts";
 import type { Fetcher } from "../sources/fetcher.ts";
 import { signalKeySet } from "./dedup.ts";
-import { isFresh } from "./freshness.ts";
+import { COLLECTION_FRESHNESS_HOURS, freshnessHoursFor, isFresh } from "./freshness.ts";
 import { backfillForSource, collectForSource, deriveSignalsForCompany } from "./observe.ts";
 import { resolveCompanySources } from "./resolution.ts";
+import { buildWebsiteSignalSource } from "./website/source.ts";
 import type { CompanyContext, DerivedSignal, Observation, SignalSource } from "./types.ts";
 
 /**
- * The operational orchestrator (V2-2A.1). Pure logic, no CLI/argv/env concerns — those live in
- * src/signals-main.ts. This module ONLY calls the existing V2-2A building blocks
- * (resolution.ts, observe.ts, freshness.ts, dedup.ts) — it derives nothing itself and adds no new
- * signal logic; it decides WHEN to call them and how to record what happened.
+ * The operational orchestrator (V2-2A.1, extended by V2-2B.2). Pure logic, no CLI/argv/env
+ * concerns — those live in src/signals-main.ts. This module ONLY calls the existing building
+ * blocks (resolution.ts, observe.ts, freshness.ts, dedup.ts, website/source.ts) — it derives
+ * nothing itself and adds no new signal logic; it decides WHEN to call them and how to record
+ * what happened.
+ *
+ * V2-2B.2 resolution-eligibility fix: resolution used to be gated on "this company has NO active
+ * source of ANY kind yet" — a website source (created unconditionally, needing no network request)
+ * would have silently and permanently suppressed GitHub/ATS resolution for every company from then
+ * on. Eligibility is now PER SOURCE CLASS: the website source is created whenever missing,
+ * independent of anything else; GitHub/ATS resolution is attempted whenever the company has no
+ * NON-website source yet, independent of whether a website source already exists. See
+ * test/signals-orchestrate.test.ts's "V2-2B.2 orchestrator fix" cases.
  */
 
 /** The exact subset of SignalStore this module needs — lets tests use a simple in-memory fake
@@ -76,6 +86,11 @@ export interface OrchestrateDeps {
   log?: Logger;
   /** Cooperative shutdown — checked between companies; an in-flight company still finishes. */
   signal?: AbortSignal;
+  /** V2-2B.2: an optional SEPARATE fetcher for website collection (constructed by signals-main.ts
+   * with website-specific politeness settings — ~1s host pacing, 15s timeout, ~1MB cap; see the
+   * design report §10). Falls back to `fetcher` when not provided (e.g. every existing test),
+   * so GitHub/ATS collection is completely unaffected either way. */
+  websiteFetcher?: Fetcher;
 }
 
 export interface OrchestrateOptions {
@@ -97,7 +112,7 @@ function errMessage(err: unknown): string {
 export async function runObservationPass(companies: readonly CompanyContext[], deps: OrchestrateDeps, options: OrchestrateOptions): Promise<RunSummary> {
   const started = Date.now();
   const now = deps.now ?? (() => new Date());
-  const freshnessHours = options.freshnessHours ?? 22;
+  const freshnessHours = options.freshnessHours ?? COLLECTION_FRESHNESS_HOURS;
   const log = deps.log;
 
   const companyIds = companies.map((c) => c.id);
@@ -127,8 +142,22 @@ export async function runObservationPass(companies: readonly CompanyContext[], d
       let sources = sourcesByCompany.get(company.id) ?? [];
       let companyHistory = existingHistory.filter((o) => o.company_id === company.id);
 
-      // A. attempt resolution only for companies that have NO active source yet.
-      if (sources.length === 0) {
+      // A1. website source — created whenever missing, unconditionally, independent of what other
+      // source types exist. Needs NO network request (the source identity IS the company's own
+      // canonical domain — see website/source.ts), so this never competes with GitHub/ATS
+      // resolution for request budget or for the "have we already resolved this company" gate.
+      if (!sources.some((s) => s.source_type === "website")) {
+        const candidate = buildWebsiteSignalSource(company);
+        const persistedSource: SignalSource = options.dryRun ? { id: null, ...candidate } : await deps.store.upsertSignalSource(candidate);
+        sources = sources.concat(persistedSource);
+        counts.resolvedNewSources += 1;
+        result.newly_resolved.push({ source_type: candidate.source_type, external_id: candidate.external_id, resolution_method: candidate.resolution_method, backfilled_observations: 0 });
+      }
+
+      // A2. GitHub/ATS resolution — attempted only for companies with NO non-website source yet.
+      // A website source (just created above, or already present from an earlier run) must never
+      // suppress this — see the module doc's "resolution-eligibility fix."
+      if (!sources.some((s) => s.source_type !== "website")) {
         counts.resolutionAttempted++;
         const resolution = await resolveCompanySources(company, deps.fetcher, deps.signal);
         if (resolution.resolved.length > 0) {
@@ -162,7 +191,7 @@ export async function runObservationPass(companies: readonly CompanyContext[], d
             }
             result.newly_resolved.push({ source_type: candidate.source_type, external_id: candidate.external_id, resolution_method: candidate.resolution_method, backfilled_observations: backfilledCount });
           }
-          sources = persisted;
+          sources = sources.concat(persisted);
         } else if (resolution.unresolved.length > 0) {
           result.resolution = "unresolved";
           counts.unresolved++;
@@ -173,15 +202,20 @@ export async function runObservationPass(companies: readonly CompanyContext[], d
       }
 
       // B/C. collect from resolved sources (existing or just-resolved), respecting freshness; derive signals from ALL history.
+      // Freshness is now PER SOURCE — a website source uses its own policy (freshness.ts:
+      // freshnessHoursFor/websiteFreshnessHours; see the design report §17), GitHub/ATS keep the
+      // flat `freshnessHours` computed once above.
       for (const source of sources) {
         const sourceId = source.id;
-        if (sourceId !== null && isFresh(companyHistory, sourceId, now(), options.force, freshnessHours)) {
+        const sourceFreshnessHours = freshnessHoursFor(source, companyHistory, freshnessHours);
+        if (sourceId !== null && isFresh(companyHistory, sourceId, now(), options.force, sourceFreshnessHours)) {
           result.sources.push({ source_type: source.source_type, external_id: source.external_id, outcome: "skipped_fresh", observations_inserted: 0, metrics_observed: [] });
           counts.skippedFresh++;
           continue;
         }
         try {
-          const collected = await collectForSource(source, deps.fetcher, { githubToken: deps.githubToken, now });
+          const collectFetcher = source.source_type === "website" ? (deps.websiteFetcher ?? deps.fetcher) : deps.fetcher;
+          const collected = await collectForSource(source, collectFetcher, { githubToken: deps.githubToken, now });
           let written: Observation[];
           if (!options.dryRun) written = await deps.store.insertObservations(collected);
           else written = collected; // dry-run: never persisted, but still used below to preview what signals WOULD derive

@@ -73,3 +73,13 @@ export const GITHUB_LEVEL_THRESHOLDS = {
    * i.e. real, ongoing shipping activity, not a project that happens to have shipped once, years ago. */
   recentReleaseMaxAgeDays: 14,
 } as const;
+
+/**
+ * V2-2B.2 website signals have no MAGNITUDE thresholds to centralize here — a page is either
+ * confirmed present or confirmed absent (see src/signals/website/resolve.ts's own absence
+ * recipe), and the level/transition rules are combinations of named patterns, not numeric cutoffs
+ * (deliberately — see the V2-2B.2 design report §9: "combinations, not an opaque point score").
+ * Their rule-version strings (WEBSITE_LEVEL_RULE_VERSION, WEBSITE_TRANSITION_RULE_VERSION) and
+ * the page-tier map live in src/signals/rules/website.ts itself, next to the logic they version,
+ * rather than being split across two files for no benefit.
+ */

@@ -64,7 +64,7 @@ export function createHomepageChecker(fetchImpl: typeof fetch = fetch): Homepage
           redirect: "follow",
           signal: signal ? AbortSignal.any([timeoutController.signal, signal]) : timeoutController.signal,
           headers: {
-            "user-agent": "StartupRadarScout/0.1 (verification; read-only)",
+            "user-agent": "StartupRadarScout/0.3 (+https://github.com/gradycwallen/startup-radar; verification; read-only)",
             accept: "text/html,application/xhtml+xml",
           },
         });
