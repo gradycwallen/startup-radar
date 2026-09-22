@@ -1,0 +1,44 @@
+import type { Metadata } from "next";
+import { Inter, Newsreader } from "next/font/google";
+import Script from "next/script";
+import { SiteHeader } from "@/components/layout/site-header";
+import { themeInitScript } from "@/lib/theme/theme-script";
+import "./globals.css";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "Startup Radar",
+    template: "%s · Startup Radar",
+  },
+  description: "Discovery intelligence for emerging startups — before they're obvious.",
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    // suppressHydrationWarning: the theme-init script (below) sets data-theme on this element
+    // before React hydrates, so the server-rendered and first-client-rendered attributes
+    // legitimately differ — that's the no-flash trade-off, not a real mismatch to fix.
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${newsreader.variable} h-full`}>
+      <body className="flex min-h-full flex-col bg-canvas font-sans text-ink antialiased">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeInitScript()}
+        </Script>
+        <SiteHeader />
+        <div className="flex-1">{children}</div>
+      </body>
+    </html>
+  );
+}

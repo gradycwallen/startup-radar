@@ -95,8 +95,12 @@ only **reads** it (to load existing companies/domains for de-duplication and exi
 | `.env` / `.env.example` | Credentials (gitignored). See §7. |
 | `.mcp.json` | Local MCP server config (gitignored, never commit). |
 
-There is **no frontend code anywhere in this repository yet** — no `web/`, `app/`, `frontend/`, no
-framework installed. §10 describes the intended direction only.
+**Frontend V1** now exists at `frontend/` — a separate Next.js (App Router) + TypeScript + Tailwind
+app with its own `package.json`. It reads `companies`/`discovery_events` from Supabase **read-only**
+(service-role key, server-only — never sent to the browser), and supports a user-toggleable
+light/dark theme (persisted, respects OS preference on first visit, no flash on load). It is
+completely decoupled from Scout: no discovery, no writes, no Anthropic calls. See §10 for what it
+covers today and `frontend/README.md` for how to run it.
 
 ---
 
@@ -382,34 +386,41 @@ query set are both tuning targets, not obviously "right" yet.
 | V2-3 | **[not yet scoped]** | Not defined by the user at time of writing. Do not invent scope for it. |
 | Controlled database writes ("Phase 2") | **[PLANNED, not started]** | Writing accepted companies/events to `companies`/`discovery_events`. Requires explicit approval; no write path exists in code today, and the DB schema is frozen until then. |
 | Automation (scheduled runs) | **[PLANNED, not started]** | E.g. a scheduled daily run. Explicitly deferred — no GitHub Actions workflow or other scheduler exists; do not create one without being asked. |
-| Frontend / product | **[PLANNED, not started]** | See §10. No frontend code exists in this repository. |
+| Frontend / product | **[V1 BUILT]** | Radar feed, Explore, Company Detail, light/dark theme. Read-only against Supabase, no enrichment/watchlists/comparison/alerts yet. See §10. |
 
 ---
 
 ## 10. Frontend / product direction
 
-**[PLANNED — none of this is built. No frontend code, framework, or design exists in this repository
-yet.]** Documented here as direction, not as an implementation plan to execute unprompted.
+**Frontend V1 is built**, at `frontend/` — a separate Next.js (App Router) + TypeScript + Tailwind
+app, decoupled from Scout (no discovery, no writes, no Anthropic calls; reads Supabase read-only via
+a server-only client, service-role key never reaches the browser). See `frontend/README.md` to run
+it. What V1 covers:
 
-The eventual frontend should be a polished startup/VC intelligence product, not an AI-chatbot interface,
-centered on:
+- **Radar (`/`)** — a recent-discoveries feed: search, category/signal-type/confidence/recency
+  filters and sort, each company card showing its "why it's on the radar" reason (Scout's real
+  `discovery_reason`, never fabricated).
+- **Explore (`/explore`)** — a denser browse/search grid over the full company set, same filters.
+- **Company Detail (`/companies/[id]`)** — identity, description, "why it's on the radar," and a
+  full discovery-event timeline with sources — the evidence-transparency piece of the vision below.
+- **Light/dark theme** — user-toggleable, persisted, respects OS preference on first visit, no flash.
 
-- **A Radar / recent discoveries feed** — what's new, ranked by relevance/strength.
-- **Company profiles** — everything Startup Radar knows about one company.
-- **Discovery-event timelines** — the sequence of events (funding, stealth, launch, accelerator, news)
-  that built up a company's profile.
-- **Evidence/source transparency** — every claim traceable to the `source_url`/`source_name` that
-  produced it, matching the transparency-first philosophy already built into the backend's ranking
-  breakdowns and lead ledger.
-- **Search and filtering** — by category, stage, event type, recency, etc.
-- **"Why this is on the radar"** — a legible explanation per company/event (the funnel's ranking already
-  produces exactly this kind of structured breakdown server-side; the frontend's job is to present it
-  well, not reinvent it).
+What V1 deliberately does NOT do yet (see the delivery report for the reasoning): no invented
+"Radar Score" or any other product-level score on the company page (removed after user review —
+wait for a real backend-derived score before showing one); no enrichment fields (founders, HQ,
+funding stage/investors, employee estimate, LinkedIn) — showing these as fabricated values for
+real, identifiable seeded companies is out of bounds, so they simply aren't shown, not faked; no
+watchlists, comparison, alerts, or search beyond simple substring matching.
+
+The longer-term vision, still mostly ahead of V1: a polished startup/VC intelligence product, not an
+AI-chatbot interface, built around a Radar feed, company profiles, discovery-event timelines,
+evidence/source transparency, search/filtering, and "why this is on the radar" — matching the
+transparency-first philosophy already in the backend's ranking breakdowns and lead ledger.
 
 Frontend work is expected to **surface additional data requirements** (fields, aggregations, indexes)
 that should feed back into Scout/schema decisions, rather than the backend speculatively expanding first
-to guess what a UI will need. When frontend work starts, let its real needs drive schema changes —
-through the normal approval process — rather than pre-building for it now.
+to guess what a UI will need. Let frontend needs drive schema changes — through the normal approval
+process — rather than pre-building for it now.
 
 ---
 
@@ -434,8 +445,12 @@ through the normal approval process — rather than pre-building for it now.
   `setTimeout`+`AbortController`+`clearTimeout` pattern in `src/deadline.ts: timeoutScope` (or the local
   equivalents in `src/sources/fetcher.ts`/`src/http.ts`); a bare `AbortSignal.timeout()` leaks a
   process-keeping timer, discovered and fixed this session.
-- **Don't start V2-2, V2-3, database writes, automation, or the frontend without explicit approval** —
-  each is a distinct, separately-approved phase (§9).
+- **Don't start V2-2, V2-3, database writes, or automation without explicit approval** — each is a
+  distinct, separately-approved phase (§9). Frontend V1 exists (§10); further frontend features
+  (enrichment, watchlists, comparison, alerts, a real backend-derived score) still need approval too.
+- **Never expose `SUPABASE_SERVICE_ROLE_KEY` to browser code.** In `frontend/`, only
+  `src/lib/supabase/server-client.ts` (marked `import "server-only"`) may read it; never import that
+  module, or reference the key, from a `"use client"` file.
 - **Keep the funnel deterministic.** If you add anything under `src/funnel/`, `src/sources/`, or
   `src/eval/` that calls an LLM, you will fail the static guard test — that test is intentional, not a
   bug to route around.
@@ -444,13 +459,17 @@ through the normal approval process — rather than pre-building for it now.
 
 ## 12. Current project status
 
-As of 2026-09-22 (end of the V2-1 session): **V2-0 and V2-1 are both complete, tested (257/257 passing,
-strict `tsc --noEmit` clean), committed (`3c1d5c6`), and pushed to `origin/main`.** The database remains
-exactly as it was before any V2 work (10 companies / 10 discovery_events, schema frozen). No live
-Anthropic calls have been made by the V2-1 funnel at any point; Phase 1's Claude-web pipeline is present
-and functional but is no longer the primary discovery path. This `CLAUDE.md` file is itself the first
-piece of V2-2-adjacent work approved — **documentation only**, no application code, schema, tests, or
-behavior were changed while writing it.
+**Backend**: V2-0 and V2-1 are both complete, tested (257/257 passing, strict `tsc --noEmit` clean),
+committed (`3c1d5c6`, plus a documentation-only `d9837dc`), and pushed to `origin/main`. The database
+remains exactly as it was before any V2 work (10 companies / 10 discovery_events, schema frozen). No
+live Anthropic calls have been made by the V2-1 funnel at any point; Phase 1's Claude-web pipeline is
+present and functional but is no longer the primary discovery path.
+
+**Frontend**: V1 (§10) is built at `frontend/` — build/typecheck/lint clean, verified against live
+Supabase data, light/dark theme implemented and verified. As of this writing it is **local-only,
+reviewed and approved in direction by the user, not yet committed or pushed** — it exists only in the
+working tree, gitignored secrets aside (`frontend/.env.local`). Commit/push happens only once the
+user explicitly asks.
 
 **Logical next decisions** (all require explicit user approval before any code is written):
 1. Whether/how to scope **V2-2** (Haiku triage, Sonnet escalation for ambiguous cases, the exploration
@@ -458,8 +477,8 @@ behavior were changed while writing it.
 2. How to close the domain-resolution gap (5/8 primary finalists currently unresolved) — likely the
    highest-leverage recall improvement available before adding any AI verification stage.
 3. Whether to expand the Google News query set / RSS registry to close coverage gaps like heylogin.
-4. When to begin scoping the **frontend** (§10) and letting its data needs inform schema decisions,
-   versus continuing to harden the backend first.
+4. Whether/when a real backend-derived score (see §10) should replace the removed frontend heuristic,
+   and what should back it.
 5. When to approve **controlled database writes** ("Phase 2") — still not implemented anywhere in code.
 
 Note on this document's provenance: the repository's git history is thin (two commits total — the

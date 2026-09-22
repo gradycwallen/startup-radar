@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens for Startup Radar.
+ *
+ * Restrained neutral system (warm stone/zinc grays) with ONE intentional accent — amber, used
+ * sparingly for signal/attention (active nav, primary actions, score meters) rather than as a
+ * general brand color. Light and dark are the SAME visual identity, not two different-looking
+ * themes — dark mode swaps the token values below, every component reads the tokens.
+ *
+ * Theme selection: an explicit `data-theme="light" | "dark"` attribute on <html>, set by the
+ * blocking inline script in src/app/layout.tsx (src/lib/theme/theme-script.ts) before first paint —
+ * see that file for why. `dark:` utilities below are keyed off that attribute, not the
+ * `prefers-color-scheme` media query, so a user's explicit choice always wins once they've made one.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --color-canvas: #fbfaf8;
+  --color-surface: #ffffff;
+  --color-ink: #18181b;
+  --color-ink-muted: #52525b;
+  --color-ink-faint: #8a8a93;
+  --color-line: #e7e5e2;
+  --color-line-strong: #d4d2ce;
+  --color-accent: #b45309;
+  --color-accent-soft: #fef3e6;
+
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-newsreader);
+}
+
+/* Dark theme — warm charcoal surfaces (never pure black), warm off-white ink (never pure white),
+ * and a lifted, more saturated amber so the accent keeps the same weight against a dark ground. */
+[data-theme="dark"] {
+  --color-canvas: #16140f;
+  --color-surface: #1f1c17;
+  --color-ink: #f3f0e9;
+  --color-ink-muted: #b6afa1;
+  --color-ink-faint: #837c6e;
+  --color-line: #332e25;
+  --color-line-strong: #453f32;
+  --color-accent: #f0a94e;
+  --color-accent-soft: #2c2010;
+}
+
+html {
+  background: var(--color-canvas);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-feature-settings: "cv11", "ss01";
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* Tabular figures for anything numeric/dense (confidence %, scores, dates). */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
