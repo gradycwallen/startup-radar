@@ -10,13 +10,19 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-// V2-2A introduces exactly ONE narrow, deliberate exception to "read-only": src/signals/store.ts
+// V2-2A introduced exactly ONE narrow, deliberate exception to "read-only": src/signals/store.ts
 // may write, but ONLY insert/upsert (never update/delete on data, never DDL), and ONLY to the
-// three new V2-2A tables. Every other file under src/ — including the rest of src/signals/ — is
-// held to the original, unweakened Phase 1 rule. See root CLAUDE.md's V2-2A section.
-const WRITE_GUARD_EXEMPT_FILE = join("src", "signals", "store.ts");
+// three V2-2A signal tables. V2-1.1 adds a SECOND, differently-scoped exception:
+// src/discovery/store.ts, which may write ONLY to companies/discovery_events — and, per the
+// V2-1.1 brief, companies are INSERT-only (never update/upsert; a domain collision means "already
+// exists, skip," never "overwrite"). Every other file under src/ — including the rest of
+// src/signals/ and src/discovery/ — is held to the original, unweakened Phase 1 rule. See root
+// CLAUDE.md's V2-2A and V2-1.1 sections.
+const SIGNAL_STORE_FILE = join("src", "signals", "store.ts");
+const DISCOVERY_STORE_FILE = join("src", "discovery", "store.ts");
+const WRITE_GUARD_EXEMPT_FILES = [SIGNAL_STORE_FILE, DISCOVERY_STORE_FILE];
 
-test("PHASE 1 + V2-2A GUARD: no write-capable database call exists anywhere under src/ except the one whitelisted signal store", () => {
+test("PHASE 1 + V2-2A + V2-1.1 GUARD: no write-capable database call exists anywhere under src/ except the two whitelisted, separately-scoped stores", () => {
   const forbidden = [
     /\.\s*(insert|update|upsert|delete)\s*\(/,
     /\.\s*rpc\s*\(/,
@@ -26,15 +32,15 @@ test("PHASE 1 + V2-2A GUARD: no write-capable database call exists anywhere unde
   ];
   const offenders: string[] = [];
   for (const file of sourceFiles("src")) {
-    if (file === WRITE_GUARD_EXEMPT_FILE) continue;
+    if (WRITE_GUARD_EXEMPT_FILES.includes(file)) continue;
     const text = readFileSync(file, "utf8");
     for (const re of forbidden) if (re.test(text)) offenders.push(`${file}: ${re}`);
   }
   assert.deepEqual(offenders, []);
 });
 
-test("V2-2A GUARD: the one whitelisted signal store writes ONLY insert/upsert (never update/delete/DDL) and NEVER touches companies or discovery_events", () => {
-  const text = readFileSync(WRITE_GUARD_EXEMPT_FILE, "utf8");
+test("V2-2A GUARD: the signal store writes ONLY insert/upsert (never update/delete/DDL) and NEVER touches companies or discovery_events", () => {
+  const text = readFileSync(SIGNAL_STORE_FILE, "utf8");
   assert.ok(!/\.\s*(update|delete)\s*\(/.test(text), "store.ts must never call .update()/.delete() — observations/signals are append-only, signal_sources only ever upserts");
   assert.ok(!/\.\s*rpc\s*\(/.test(text) && !/\b(TRUNCATE|ALTER\s+TABLE|DROP\s+TABLE|CREATE\s+TABLE)\b/i.test(text), "store.ts must never touch schema or call rpc()");
   const tableCalls = [...text.matchAll(/\.from\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map((m) => m[1]);
@@ -42,9 +48,21 @@ test("V2-2A GUARD: the one whitelisted signal store writes ONLY insert/upsert (n
   assert.deepEqual([...new Set(tableCalls)].sort(), ["observations", "signal_sources", "signals"], "store.ts must touch ONLY the three V2-2A tables — never companies or discovery_events");
 });
 
-test("PHASE 1 + V2-2A GUARD: only db.ts and the whitelisted signal store touch supabase-js; db.ts only issues select/count reads", () => {
+test("V2-1.1 GUARD: the discovery store writes ONLY to companies/discovery_events (never a signal table), never UPDATEs a company, never calls DDL/rpc", () => {
+  const text = readFileSync(DISCOVERY_STORE_FILE, "utf8");
+  assert.ok(!/\.\s*delete\s*\(/.test(text), "discovery/store.ts must never call .delete()");
+  assert.ok(!/\.\s*rpc\s*\(/.test(text) && !/\b(TRUNCATE|ALTER\s+TABLE|DROP\s+TABLE|CREATE\s+TABLE)\b/i.test(text), "discovery/store.ts must never touch schema or call rpc()");
+  const tableCalls = [...text.matchAll(/\.from\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map((m) => m[1]);
+  assert.deepEqual([...new Set(tableCalls)].sort(), ["companies", "discovery_events"], "discovery/store.ts must touch ONLY companies/discovery_events — never a V2-2A signal table");
+  // "companies" must only ever be reached via .insert(...).from("companies") or .select(...).from("companies")
+  // — never .update() against it. This is a coarse but effective check: no .update( call anywhere,
+  // given .delete( is already forbidden above and the only remaining write verbs are insert/upsert.
+  assert.ok(!/\.\s*update\s*\(/.test(text), "discovery/store.ts must never call .update() on companies — insert-only, per the V2-1.1 write policy");
+});
+
+test("PHASE 1 + V2-2A + V2-1.1 GUARD: only db.ts and the two whitelisted stores touch supabase-js; db.ts only issues select/count reads", () => {
   const importers = sourceFiles("src").filter((f) => /@supabase\/supabase-js/.test(readFileSync(f, "utf8")));
-  assert.deepEqual(importers.sort(), [join("src", "db.ts"), WRITE_GUARD_EXEMPT_FILE].sort());
+  assert.deepEqual(importers.sort(), [join("src", "db.ts"), ...WRITE_GUARD_EXEMPT_FILES].sort());
   const db = readFileSync(join("src", "db.ts"), "utf8");
   const fromCalls = db.match(/\.from\(/g)?.length ?? 0;
   const selectCalls = db.match(/\.select\(/g)?.length ?? 0;

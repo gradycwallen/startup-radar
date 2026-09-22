@@ -13,7 +13,8 @@
     "test": "node --import tsx --test test/*.test.ts",
     "funnel": "tsx src/funnel-main.ts",
     "eval": "tsx src/eval/run-eval.ts",
-    "signals": "tsx src/signals-main.ts"
+    "signals": "tsx src/signals-main.ts",
+    "discover": "tsx src/discover-main.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",

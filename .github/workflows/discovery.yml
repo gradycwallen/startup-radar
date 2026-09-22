@@ -1,0 +1,61 @@
+name: Discovery run
+
+# V2-1.1 — operates ONLY the operational discovery CLI (src/discover-main.ts), which reuses the
+# existing V2-1 deterministic funnel unchanged. It never touches Frontend V1, never runs signal
+# observation (V2-2A/V2-2A.1), and makes zero Anthropic API calls. Writes go only to
+# companies/discovery_events via the existing DiscoveryStore — the three signal tables
+# (signal_sources/observations/signals) are never touched (see root CLAUDE.md, V2-1.1 section).
+#
+# NOT LIVE until: (1) this file is committed to the default branch, and (2) SUPABASE_URL and
+# SUPABASE_SERVICE_ROLE_KEY exist as repository secrets (they already do — configured for
+# V2-2A.1), and (3) a manual workflow_dispatch run has actually succeeded end-to-end. See the
+# V2-1.1 report for exact steps and current status.
+
+on:
+  schedule:
+    # Once daily, 12:17 UTC — one hour before the signal-observation workflow's 13:17 UTC, so
+    # any newly discovered companies are already committed to the database before that pass runs
+    # (discovery and signal observation remain separate systems; this ordering is a courtesy, not
+    # a hard dependency — a company missed by one day's gap is simply picked up on the next run).
+    # Off-the-hour per GitHub's own guidance (avoid the top of the hour, when scheduled-run load —
+    # and therefore delay — is highest). GitHub Actions does not guarantee the exact minute for
+    # scheduled runs; "once daily, approximately around this time" is the real guarantee.
+    - cron: "17 12 * * *"
+  # Manual runs for testing/on-demand discovery, from the Actions tab.
+  workflow_dispatch: {}
+
+# Least privilege: this job only reads this repository (to check it out). It needs no GitHub API
+# access at all (unlike the signals workflow) — the discovery funnel's providers are RSS/Atom
+# feeds, Google News, and public directory pages, none of which are api.github.com.
+permissions:
+  contents: read
+
+# Prevents two runs (a schedule firing while a manual run is still going, or vice versa) from
+# ever overlapping and double-writing.
+concurrency:
+  group: discovery-run
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run discovery pass
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        # Default production command: no --dry-run (this run is meant to persist), no extra flags
+        # needed — src/discover-main.ts's own built-in hard caps (DISCOVERY_LIMITS: ~10 accepted
+        # candidates, ~5 new companies, ~25 new events per run) already bound this call. The CLI
+        # may only LOWER these via --max-writes, never raise or bypass them.
+        run: npm run discover

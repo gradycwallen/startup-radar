@@ -382,16 +382,16 @@ fetch injection, no real network, no real Supabase, no Anthropic calls whatsoeve
 
 ---
 
-## 5B. Current V2-2A.1 state (Automated Observation Runs) — [BUILT, not yet CONFIGURED/LIVE]
+## 5B. Current V2-2A.1 state (Automated Observation Runs) — [BUILT, CONFIGURED, LIVE]
 
 Operationalizes V2-2A: a CLI that revisits known companies over time and a scheduled workflow to
 run it unattended. Adds **no new signal families, no schema changes, no frontend changes** — it is
 purely "run the existing V2-2A machinery safely, repeatedly, on its own." Three precise states,
-never conflated: **BUILT** (the code exists and is tested) — true as of this writing. **CONFIGURED**
-(the GitHub Actions workflow is committed AND the required repository secrets exist) — not yet
-true; see the delivery report for the exact manual step outstanding. **LIVE** (a real scheduled or
-dispatched run has actually completed successfully in Actions) — not yet true, and won't be claimed
-true here until it has.
+never conflated: **BUILT** (the code exists and is tested) — true. **CONFIGURED** (the GitHub
+Actions workflow is committed AND the required repository secrets exist) — true; the workflow is
+committed on `main` (`1e15837`) and `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` are set as repository
+secrets. **LIVE** (a real scheduled or dispatched run has actually completed successfully in
+Actions) — true; a manual `workflow_dispatch` run has completed successfully end-to-end.
 
 **CLI** (`npm run signals`, `src/signals-main.ts`): argv/env/logging only — all policy lives in
 `src/signals/orchestrate.ts`, which the CLI calls and nothing else. Flags: `--dry-run` (real
@@ -461,18 +461,122 @@ retrying a write without an idempotency key risks a duplicate row). Reads carry 
 `SignalStore`'s three read methods now retry up to 3 times with exponential backoff, matching
 `src/db.ts: ReadOnlyDb#read`'s already-proven pattern exactly. Regression-tested.
 
-**GitHub Actions** (`.github/workflows/signals.yml`): daily cron (`17 6 * * *` UTC, an off-the-hour
-time) plus `workflow_dispatch` for manual runs; `permissions: contents: read` (least privilege);
-a concurrency group prevents overlapping runs; 15-minute job timeout; `actions/checkout@v4` +
-`actions/setup-node@v4` (Node 24, matching `package.json`'s `engines`) + `npm ci` + `npm run
-signals`. Uses the **built-in `GITHUB_TOKEN`** GitHub Actions provisions automatically (confirmed:
-1,000 requests/hour/repository, vs. 60/hour unauthenticated — comfortably sufficient at this
-project's scale) — no separate personal access token was created. **Required repository secrets:
-`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`** (same values as the root `.env`, added as GitHub
-repository secrets, never committed). The workflow file's YAML was validated and `npm ci`
-dry-run-verified against the committed lockfile; **no actual scheduled or dispatched run has
-completed** — see the delivery report for the exact remaining manual step and do not describe this
-automation as live until an Actions run has actually succeeded.
+**GitHub Actions** (`.github/workflows/signals.yml`): daily cron (`17 13 * * *` UTC — ~9:17 AM
+EDT/8:17 AM EST, an off-the-hour time) plus `workflow_dispatch` for manual runs; `permissions:
+contents: read` (least privilege); a concurrency group prevents overlapping runs; 15-minute job
+timeout; `actions/checkout@v4` + `actions/setup-node@v4` (Node 24, matching `package.json`'s
+`engines`) + `npm ci` + `npm run signals`. Uses the **built-in `GITHUB_TOKEN`** GitHub Actions
+provisions automatically (confirmed: 1,000 requests/hour/repository, vs. 60/hour unauthenticated —
+comfortably sufficient at this project's scale) — no separate personal access token was created.
+**Required repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`** (same values as the
+root `.env`, added as GitHub repository secrets, never committed). The workflow file's YAML was
+validated and `npm ci` dry-run-verified against the committed lockfile, and a manual
+`workflow_dispatch` run has since completed successfully in the Actions tab — this automation is
+LIVE.
+
+---
+
+## 5C. Current V2-1.1 state (Automated Discovery Runs) — [BUILT, locally validated, not yet committed]
+
+Operationalizes V2-1: a CLI that runs the existing deterministic discovery funnel unattended and
+persists genuinely new companies. Adds **no new signal families, no new providers, no schema
+changes, no frontend changes, no Radar Score** — it is purely "run the existing V2-1 funnel safely,
+repeatedly, on its own, with a narrow write path." Discovery and signal observation (§5A/§5B) remain
+fully separate systems and workflows; a company this milestone inserts becomes eligible for signal
+observation automatically on that workflow's *next* run (via `ExistingIndex`/resolution — no direct
+cross-invocation was built or is needed). Same three-state discipline as §5B: **BUILT** (code exists
+and is tested) — true. **CONFIGURED** (workflow committed + secrets present) — not yet true, pending
+commit/push. **LIVE** (a real scheduled or dispatched run has completed successfully in Actions) —
+not yet true; one **local** live run has succeeded against the real database (see below), but no
+Actions run has occurred yet. Do not describe this automation as live until an Actions run actually
+has.
+
+**CLI** (`npm run discover`, `src/discover-main.ts`): argv/env/logging only — reuses the existing
+V2-1 funnel (`runFunnel`, `ExistingIndex`, `PoliteFetcher`, homepage checker, `DEFAULT_FUNNEL_CONFIG`)
+and persistence policy (`src/discovery/accept.ts`/`orchestrate.ts`/`store.ts`) unchanged, duplicating
+none of it. Flags: `--dry-run` (runs the real funnel, zero writes), `--max-writes <n>` (may only
+*lower* the built-in cap, never raise it — `--max-writes=-1` form required for negative-number
+validation tests, a `util.parseArgs` quirk, not a CLI bug), `--log-dir`, `--json`, `--replay
+<snapshot-dir>` + `--as-of <YYYY-MM-DD>` (offline reproduction against a committed HTTP snapshot;
+replay always implies dry-run — there is no live database in that mode). The default production
+command (no flags) is the one GitHub Actions runs, bounded entirely by the caps below.
+
+**Acceptance rule** (`src/discovery/accept.ts: evaluateCandidate`): a finalist entity
+(`RankedEntity.finalist === true`, which already encodes V2-1's prefilter + ranking + diversity
+selection) with a **resolved domain** (`entity.domain.domain !== null`) is accepted; anything else is
+rejected with a named reason (`not_finalist` | `unresolved_domain`). Deliberately minimal — no
+threshold duplication, no re-scoring. An unresolved-domain candidate may appear in `--dry-run`/
+`--json` output for visibility but is **never** inserted: "a wrong domain is worse than missing a
+company for one run."
+
+**Write policy** (`src/discovery/store.ts: DiscoveryStore`): `insertCompany` is a plain insert; a
+`23505` unique-violation on `domain` is treated as a benign `{conflict: true}` (never thrown) since
+the company already existing is an expected, non-error outcome — everything else throws. Existing
+company fields are **never** overwritten; this milestone persists **new companies only** (see scope
+cut below). `upsertEvents` is an ignore-duplicates upsert keyed on `(company_id, source_url)` — the
+database constraint itself is the idempotency mechanism, not application logic. Both use the
+established `#withDeadline` (a real `Promise.race`, not just an abort signal) and are attempted
+**exactly once** — never blindly retried, since a write has no safe idempotency key for retry beyond
+the DB's own constraints (matching `SignalStore`'s write policy in §5B).
+
+**Scope cut, explicitly disclosed**: V2-1.1 persists brand-new companies (with their initial
+events, from the same funnel run's evidence) only. It does **not** add new `discovery_events` rows
+to an *already-existing* company when fresh corroborating evidence appears for it — a capability the
+original brief explicitly permitted considering but left to be scoped in or out. Deferred to keep
+the very first write path's blast radius minimal; a future milestone could add it without touching
+this one's acceptance/write logic.
+
+**Re-run idempotency across days** (no new state-tracking needed): `ExistingIndex` is built fresh
+from live `companies` data on every invocation, so a company persisted today is naturally seen as
+`existing` — not a new finalist candidate — on every subsequent run, via V2-1's own domain/name/alias
+matching. No cross-run bookkeeping table was required.
+
+**Hard run caps** (`src/discovery/limits.ts: DISCOVERY_LIMITS`, centralized): `maxAcceptedCandidates:
+10`, `maxNewCompaniesPerRun: 5`, `maxNewEventsPerRun: 25`. The CLI's `--max-writes` may only lower
+`maxNewCompaniesPerRun` for a given invocation, never raise or bypass any of the three. Zero new
+companies is a valid, expected outcome on many runs — thresholds are never lowered to force a write.
+
+**Failure isolation**: provider failures are isolated exactly as in V2-1 (per-provider try/catch,
+health reporting, no single source failure aborting the run); a write failure for one candidate does
+not stop the rest of the run (the last live run reported "0 failed writes," but the path exists and
+is tested).
+
+**Anthropic / external cost**: zero Anthropic calls, by code (the write-guard-style test asserting no
+`.from()` call outside the two permitted tables, plus a direct grep-style check, cover
+`src/discovery/orchestrate.ts`). All 10 existing V2-1 providers are reused unchanged; no new sources,
+no paid APIs. Measured external cost on the one live run: **$0** (RSS/Atom/Google News/directory
+fetches only).
+
+**Controlled validation performed** (local, per the brief's mandated manual-first-run sequence):
+(1) `--replay` against the committed V2-1 eval fixture, offline, no credentials — found and fixed two
+real bugs during this step (see below); (2) real `--dry-run` against the live database — 5 candidates
+reviewed manually, all judged legitimate; (3) **one** real live run, capped at `--max-writes=3`:
+inserted 3 companies (Chamelio, Lightspring, Spott) and 17 discovery_events, 0 duplicates, 0 failed
+writes, $0 external cost, 1.0s elapsed. Post-write verification confirmed `companies` went 10→13 and
+`discovery_events` went 10→27, the three §5A/§5B signal tables were completely untouched (still
+2/9/0), all three new domains are canonical and resolved, and every inserted event carries a real,
+distinct `source_url` and headline — no fabrication.
+
+**Two real bugs found and fixed during this validation** (disclosed, not hidden): (1)
+`discoveryReasonFor` was pulling `round`/`amount_usd` from the entity-level best-evidence aggregate
+instead of the *specific* evidence item being quoted, producing a real misattribution ("Nex joined an
+accelerator cohort of $150M," borrowing a separate funding article's amount for an accelerator
+listing that itself had none) — fixed to always use the primary evidence's own fields, with two
+dedicated regression tests. (2) the dry-run branch of `runDiscoveryPass` set `events_inserted` on
+each per-candidate result but never added it into the run-level summary total, so `--dry-run --json`
+under-reported (`events_inserted: 0` despite real evidence) — fixed with the missing aggregation line
+and a regression test.
+
+**GitHub Actions** (`.github/workflows/discovery.yml`, committed but not yet pushed — see §12): daily
+cron (`17 12 * * *` UTC — one hour before the signals workflow's 13:17 UTC, so newly discovered
+companies are already persisted before that pass runs; the ordering is a courtesy, not a hard
+dependency) plus `workflow_dispatch`; `permissions: contents: read`; a concurrency group prevents
+overlapping runs; 15-minute timeout; `actions/checkout@v4` + `actions/setup-node@v4` (Node 24) +
+`npm ci` + `npm run discover` (no flags — the CLI's own built-in caps bound the run). **Required
+repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`** only — both already exist (added
+for §5B); no new secret was needed, and none would have been added without stopping to ask first, per
+the brief. No GitHub API access is needed at all for this workflow (unlike §5B) since none of the 10
+discovery providers touch `api.github.com`.
 
 ---
 
@@ -562,12 +666,13 @@ automation as live until an Actions run has actually succeeded.
 | V2-1 (deterministic discovery funnel) | **[BUILT]** | RSS/Google-News/YC/Techstars providers, deterministic extraction/prefilter/clustering/dedup/domain-resolution/ranking, offline eval harness with measured recall. See §5. |
 | Signal-intelligence research | **[DONE — research/design only]** | A wide survey of "momentum/behavioral" signals (hiring, GitHub, website structure, funding/regulatory, community, etc.) beyond V2-1's event signals, with feasibility notes and a prioritized recommendation. Superseded the originally-planned V2-2 scope below — see the delivery report for the full analysis. |
 | V2-2A (Signal Foundation) | **[BUILT]** | The narrow first build from that research: source resolution + hiring (ATS) and GitHub observation collectors + a deterministic, versioned, explainable signal-derivation engine. No score, no alerts, no other signal families yet. See §5A. |
-| V2-2A.1 (Automated Observation Runs) | **[BUILT — CONFIGURED/LIVE pending]** | Operationalizes V2-2A: `npm run signals` CLI, monitoring/freshness policy, failure isolation, and a GitHub Actions daily workflow. Code and tests are done; the workflow is not yet committed and the required repository secrets are not yet confirmed configured — see §5B and the delivery report for the exact remaining step. |
+| V2-2A.1 (Automated Observation Runs) | **[BUILT, CONFIGURED, LIVE]** | Operationalizes V2-2A: `npm run signals` CLI, monitoring/freshness policy, failure isolation, and a GitHub Actions daily workflow (`17 13 * * *` UTC). Committed/pushed; secrets configured; a manual `workflow_dispatch` run has completed successfully. See §5B. |
+| V2-1.1 (Automated Discovery Runs) | **[BUILT, locally live-validated, not yet committed]** | Operationalizes V2-1: `npm run discover` CLI, conservative acceptance/write policy, hard run caps, and a GitHub Actions daily workflow (`17 12 * * *` UTC, not yet pushed). One capped local live run succeeded against the real database (3 companies, 17 events, $0 cost). See §5C and the delivery report for exact next steps before commit/push. |
 | V2-2B+ (remaining signal families, corroboration, a real score) | **[PLANNED, not yet scoped in detail]** | Website-structure monitoring, SEC Form D, cross-family corroboration, and eventually a transparent momentum/Radar score are all still research-stage ideas, not committed plans — see the V2-2A delivery report's "what remains" section. Do not start any of it without explicit approval. |
 | ~~V2-2 (Haiku triage / Sonnet escalation on funnel finalists)~~ | **superseded** | The originally-approved V2-2 scope (bounded AI triage/escalation directly on V2-1's funnel output) was reconsidered after the signal-intelligence research and replaced by V2-2A above. Entity-resolution AI fallback (a different, narrower idea) is architected in V2-2A but not implemented — see §5A. |
 | V2-3 | **[not yet scoped]** | Not defined by the user at time of writing. Do not invent scope for it. |
-| Controlled database writes ("Phase 2") | **[PLANNED, not started]** | Writing accepted companies/events to `companies`/`discovery_events`. Requires explicit approval; no write path exists in code today, and the DB schema is frozen until then. |
-| Automation (scheduled runs) | **[PLANNED, not started]** | E.g. a scheduled daily run. Explicitly deferred — no GitHub Actions workflow or other scheduler exists; do not create one without being asked. |
+| Controlled database writes to `companies`/`discovery_events` ("Phase 2") | **[BUILT, narrow scope — V2-1.1]** | `src/discovery/store.ts` writes new companies + their initial events only, under hard caps, via `npm run discover`. Does not (yet) add events to already-existing companies — see §5C. Any broader write scope still requires explicit approval. |
+| Automation (scheduled runs) | **[LIVE for signals; BUILT, pending commit for discovery]** | Two separate GitHub Actions workflows: `.github/workflows/signals.yml` (§5B, live) and `.github/workflows/discovery.yml` (§5C, built and locally validated, not yet committed). |
 | Frontend / product | **[V1 BUILT]** | Radar feed, Explore, Company Detail, light/dark theme. Read-only against Supabase, no enrichment/watchlists/comparison/alerts yet. See §10. |
 
 ---
@@ -610,12 +715,18 @@ process — rather than pre-building for it now.
 
 - **Never make a live Anthropic API call from an automated test or from `--replay`/offline mode.**
 - **Never add a database write path without explicit, current approval** — even a "harmless" one. The
-  write-guard tests (`test/readonly.test.ts` and the V2-1 equivalents) exist specifically to catch this
-  by accident; do not delete, weaken, or work around them. The one existing exception
-  (`src/signals/store.ts`, V2-2A) is itself guarded: it may only `insert`/`upsert` into
-  `signal_sources`/`observations`/`signals`, checked by a test that inspects every `.from(...)` call
-  in that file by name. Do not add a second write-capable file, and do not let that one file's writes
-  reach `companies`/`discovery_events`, `update`/`delete` `observations`/`signals`, or touch schema.
+  write-guard tests (`test/readonly.test.ts`) exist specifically to catch this by accident; do not
+  delete, weaken, or work around them. There are exactly two write-capable files today, each guarded by
+  a test that inspects every `.from(...)` call in that file by name and scopes it to specific tables:
+  `src/signals/store.ts` (V2-2A — may only `insert`/`upsert` into `signal_sources`/`observations`/
+  `signals`) and `src/discovery/store.ts` (V2-1.1 — may only `insert`/`upsert` into `companies`/
+  `discovery_events`, never overwrite an existing company's fields, never `update`/`delete` either
+  table). Do not add a third write-capable file, and do not let either file's writes cross into the
+  other's tables or touch schema.
+- **Never raise or bypass `DISCOVERY_LIMITS`** (`src/discovery/limits.ts`) from within `discover-main.ts`
+  or `src/discovery/orchestrate.ts` — the CLI's `--max-writes` may only *lower* the company cap for a
+  single invocation. Zero new companies is a valid outcome; never loosen the acceptance rule in
+  `src/discovery/accept.ts` to force a write.
 - **Never modify the `companies`/`discovery_events` schema, RLS, grants, or seed data** without the user
   explicitly asking. The 10/10 row counts are a fixed baseline other things (dedup tests, eval labels)
   are measured against. (`signal_sources`/`observations`/`signals`, added in V2-2A, are a separate,
@@ -655,12 +766,17 @@ process — rather than pre-building for it now.
   "we didn't observe this" become indistinguishable from "we observed zero" (§5B). This is the one
   rule the V2-2A.1 milestone treated as non-negotiable; it has 7 dedicated regression tests
   (`test/signals-missing-vs-zero.test.ts`) — do not weaken or delete them.
-- **Never schedule the signals workflow more than once daily**, and never have it (or anything else)
-  call `--force` by default — `.github/workflows/signals.yml`'s cron and the CLI's own default are
-  both deliberately conservative; loosening either is a decision for the user, not a default to change.
-- **Do not claim the GitHub Actions automation is "live"** unless an actual scheduled or
+- **Never schedule the signals or discovery workflows more than once daily**, and never have either
+  call `--force`/bypass its caps by default — both workflows' crons and each CLI's own defaults are
+  deliberately conservative; loosening either is a decision for the user, not a default to change.
+- **Do not claim a GitHub Actions automation is "live"** unless an actual scheduled or
   `workflow_dispatch` run has completed successfully in the Actions tab — a committed workflow file
-  or configured secrets alone are "CONFIGURED," not "LIVE." See §5B's three-state distinction.
+  or configured secrets alone are "CONFIGURED," not "LIVE." See §5B/§5C's three-state distinction
+  (true today for signals; not yet true for discovery).
+- **Keep discovery (§5C) and signal observation (§5B) separate systems and workflows.** Do not make
+  `discover-main.ts` invoke `signals-main.ts` or vice versa, and do not merge their GitHub Actions
+  workflows — a newly discovered company becomes eligible for signal observation naturally, on that
+  workflow's own next run, with no direct handoff code required or wanted.
 
 ---
 
@@ -674,21 +790,27 @@ functional but is no longer the primary discovery path.
 the three new tables (migration applied to the live database), tested, and live-verified against
 the real GitHub API and one real company.
 
-**Automated observation runs**: V2-2A.1 (§5B) is code-complete and tested (`src/signals-main.ts`,
-`src/signals/orchestrate.ts`/`freshness.ts`/`dedup.ts`, `.github/workflows/signals.yml`), and has
-been run live locally against the real database. **Not yet committed/pushed as of this writing**,
-and the GitHub Actions automation is **BUILT but not yet CONFIGURED or LIVE** — the repository
-secrets it needs (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) could not be verified/set from this
-environment (no `gh` CLI / GitHub web access available here). See the delivery report for the exact
-manual step required before the first unattended run.
+**Automated observation runs**: V2-2A.1 (§5B) is complete, committed/pushed (`1e15837`), and **LIVE**
+— `src/signals-main.ts`, `src/signals/orchestrate.ts`/`freshness.ts`/`dedup.ts`,
+`.github/workflows/signals.yml` (daily cron `17 13 * * *` UTC), repository secrets configured, and a
+manual `workflow_dispatch` run has completed successfully end-to-end.
+
+**Automated discovery runs**: V2-1.1 (§5C) is code-complete and tested (`src/discover-main.ts`,
+`src/discovery/accept.ts`/`orchestrate.ts`/`store.ts`/`limits.ts`, `.github/workflows/discovery.yml`),
+and has had **one capped live run against the real database** (3 companies, 17 events inserted, 0
+duplicates, $0 external cost, signal tables unaffected). **Not yet committed/pushed as of this
+writing** — the GitHub Actions automation is **BUILT but not yet CONFIGURED or LIVE**: the workflow
+file exists locally but is not on `main`, and no Actions run (scheduled or dispatched) has occurred.
+See the delivery report for the exact next steps before commit/push.
 
 **Frontend**: V1 (§10) is built at `frontend/` and has been committed and pushed to `origin/main`
 (`1fc56e8`) — build/typecheck/lint clean, verified against live Supabase data, light/dark theme
 implemented and verified. Not touched by V2-2A or V2-2A.1.
 
 **Logical next decisions** (all require explicit user approval before any code is written):
-1. Configure the two repository secrets and confirm the first real GitHub Actions run succeeds
-   (§5B) — the one concrete blocker to V2-2A.1 actually running unattended.
+1. Review and, if approved, commit/push V2-1.1, then run `workflow_dispatch` on
+   `.github/workflows/discovery.yml` and confirm it succeeds in the Actions tab (§5C) — the one
+   concrete blocker to discovery automation actually running unattended.
 2. Whether/how to scope **V2-2B+** — which remaining signal families (website-structure monitoring,
    SEC Form D, others from the research report) to build next, if any, and when cross-family
    corroboration and a real transparent momentum score are worth attempting.
@@ -699,9 +821,10 @@ implemented and verified. Not touched by V2-2A or V2-2A.1.
 5. Whether to expand the Google News query set / RSS registry to close V2-1 coverage gaps like heylogin.
 6. Whether/when V2-2A's signals should be surfaced in the frontend at all (a "Signals" panel was
    explicitly out of scope for V2-2A) and whether/when a real backend-derived score should exist.
-7. When to approve **controlled database writes to `companies`/`discovery_events`** ("Phase 2") — still
-   not implemented anywhere in code. (V2-2A/V2-2A.1's writes to the three new signal tables are a
-   separate, narrower, already-approved exception — see §11.)
+7. Whether/when to extend V2-1.1 to also add new `discovery_events` to already-existing companies
+   (explicitly scoped out of V2-1.1 itself — see §5C).
+8. When to approve further **controlled database writes to `companies`/`discovery_events`** beyond
+   V2-1.1's narrow new-companies-only path — see §11.
 
 Note on this document's provenance: the repository's git history is thin (four commits as of V2-2A —
 the project was built interactively and committed after the fact), so §4's "history and why" is
