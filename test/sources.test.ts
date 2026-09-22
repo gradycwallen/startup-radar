@@ -193,6 +193,21 @@ test("PoliteFetcher: per-host spacing, per-provider stats, honest User-Agent, GE
   assert.equal(f.stats("nobody").requests, 0);
 });
 
+test("PoliteFetcher: optional per-request headers (V2-2A) are merged in without disturbing user-agent/accept defaults", async () => {
+  const seen: Headers[] = [];
+  const fetchImpl = (async (_url: string, init: RequestInit) => {
+    seen.push(new Headers(init.headers));
+    return new Response("ok", { status: 200 });
+  }) as typeof fetch;
+  const f = new PoliteFetcher({ fetchImpl, minDelayMs: 0, sleep: async () => {} });
+  await f.getText("https://api.github.com/orgs/acme", { provider: "p", headers: { authorization: "Bearer test-token", "x-github-api-version": "2022-11-28" } });
+  await f.getText("https://a.example.com/plain", { provider: "p" }); // no headers option: identical to before this change
+  assert.equal(seen[0]!.get("authorization"), "Bearer test-token");
+  assert.equal(seen[0]!.get("x-github-api-version"), "2022-11-28");
+  assert.match(seen[0]!.get("user-agent") ?? "", /StartupRadarScout/, "extra headers do not clobber the honest user-agent");
+  assert.equal(seen[1]!.has("authorization"), false, "a request with no headers option is unaffected");
+});
+
 test("PoliteFetcher: network failures throw FetchError and are counted in stats; invalid URLs too", async () => {
   const f = new PoliteFetcher({ fetchImpl: (async () => { throw new TypeError("fetch failed", { cause: new Error("ENOTFOUND nope.invalid") }); }) as typeof fetch, minDelayMs: 0, sleep: async () => {} });
   await assert.rejects(f.getText("https://nope.invalid/x", { provider: "p" }), (e: unknown) => e instanceof FetchError && /ENOTFOUND/.test((e as Error).message));

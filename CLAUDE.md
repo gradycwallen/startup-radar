@@ -298,6 +298,90 @@ query set are both tuning targets, not obviously "right" yet.
 
 ---
 
+## 5A. Current V2-2A state (Signal Foundation) — [BUILT]
+
+A research phase (signal-intelligence design, not implemented) preceded this: it surveyed a wide
+"signal universe" (hiring/ATS, GitHub, website structure, funding/regulatory, community, etc.) and
+recommended a narrower first build. **V2-2A is that narrower build** — a foundation proving Startup
+Radar can connect a company to reliable external sources, collect observations over time, and
+derive deterministic, explainable signals from real *change*, not snapshots. It does **not**
+replace or touch V2-1 (the discovery funnel is completely unchanged) and does **not** implement a
+Radar/momentum score, alerts, watchlists, or comparison — those remain [PLANNED].
+
+**New layer, new directory**: `src/signals/` — deliberately separate from `src/funnel/`/`src/sources/`
+(V2-1 discovery) and from `src/db.ts` (V1 read-only reads). Conceptually:
+
+```
+COMPANIES (V2-1, unchanged) -> SOURCE RESOLUTION -> RAW OBSERVATIONS -> DETERMINISTIC COMPARISON -> DERIVED SIGNALS
+```
+
+**Two signal families only**: `hiring` (ATS job postings — Greenhouse/Lever/Ashby, all official
+public no-auth APIs) and `github` (GitHub's official REST API). Website-structure monitoring, SEC
+Form D, and every other family from the research report are explicitly **not** built yet.
+
+**Source resolution** (`src/signals/resolution.ts`) is deterministic-first: it fetches a company's
+own homepage (and, if nothing is found there, its `/careers` page — at most 3 requests per
+company, ever) via the same `PoliteFetcher` V2-1 uses, looks for GitHub/ATS links, and only accepts
+a candidate when either (a) the candidate's own public metadata confirms it back (a GitHub org's
+`blog` field matching the company's domain, or an ATS board's own reported org name matching the
+company name) — `resolution_method: "homepage_link_confirmed"` — or (b) no confirmation exists but
+the slug/token closely resembles the company name (reusing V2-1's own `nameDomainSimilarity`) —
+`"homepage_link_name_match"`, lower confidence. A candidate that is neither confirmed nor
+name-similar is **rejected outright**, never stored: unresolved is the correct outcome when
+evidence is insufficient, not a bug to work around. A bounded AI fallback for genuinely ambiguous
+cases is architected (`src/signals/resolution-ai-fallback.ts`, modeled on the existing
+`repairJson` pattern in `src/claude.ts`: reserve → timeout-scope → settle, cached, one call ever
+per ambiguity) but is **not wired in anywhere** — a static guard test
+(`test/readonly.test.ts`) asserts nothing in `src/signals/` calls it.
+
+**Collectors** (`src/signals/sources/`): GitHub (stars, forks, open issues, contributor count,
+trailing-4-week commit total, latest release date; `watchers` deliberately excluded — identical to
+`stargazers_count` in the modern API, not a second signal) and the three ATS collectors (open job
+count, per-category counts via a deterministic keyword classifier — `src/signals/sources/ats/
+roles.ts` — and three narrow "notable first hire" booleans requiring a specific keyword *pair*,
+e.g. `enterprise`/`strategic` **and** `account executive`/`sales`, matching the discipline
+`src/funnel/extract.ts` already uses). No LLM anywhere in this path.
+
+**Observation model** (`src/signals/types.ts`, DB tables applied — see below): one row per
+(company, metric, time) in `observations`, never overwritten — the append-only raw-evidence layer.
+`signals` are DERIVED and recomputable, each `rule_version`-stamped so a future threshold change
+never silently reinterprets old history. `signal_sources` is the one mutable table (a resolution
+can be corrected/deactivated later).
+
+**Velocity/windows** (`src/signals/velocity.ts`): standard windows are 7/14/30/90 days;
+`compareWindow` is strict — two observations 3 days apart never produce a "30-day" claim, and
+a single observation reports insufficient history explicitly rather than guessing. A window
+comparison only ever looks at its two endpoints (a mid-window spike that already reverted is
+invisible by construction); `isPersistent` adds one more check for the case where the spike **is**
+the latest reading — the move must already have been underway one reading earlier, not appear for
+the first time in a single data point. See `rules/thresholds.ts` for every centralized, versioned
+threshold (deliberately conservative starting values, not yet backtested).
+
+**Database — additive only, applied**: `signal_sources`, `observations`, `signals` (full DDL,
+grants, and a full change log are in the V2-2A delivery report, not duplicated here). RLS enabled,
+zero policies, matching V1's posture exactly; `anon`/`authenticated` have **no** grants on any of
+the three (Postgres/Supabase grants some baseline privileges to those roles on newly created tables
+by default — this had to be explicitly revoked, the same way the original V1 migrations did for
+`companies`/`discovery_events`). `service_role` gets SELECT/INSERT/UPDATE on `signal_sources`
+(the one mutable table) and SELECT/INSERT-only on `observations`/`signals` (append-only, enforced
+at the grant level, not just by convention). **`companies` and `discovery_events` were not
+touched** — same columns, same constraints, same 10/10 row counts as before V2-2A.
+
+**The one deliberate, narrow exception to "read-only"**: `src/signals/store.ts` is the *only* file
+under `src/` allowed to write, and only `insert`/`upsert` into the three tables above — never
+`companies`/`discovery_events`, never `update`/`delete` on `observations`/`signals`. This is
+enforced by static guard tests in `test/readonly.test.ts`, not just a comment: one test scans all
+of `src/` for write-capable calls outside that one whitelisted file, and a second test inspects
+`store.ts` itself and asserts every `.from(...)` call names only `signal_sources`, `observations`,
+or `signals`.
+
+**Live-verified**: resolution + collection + storage were run against the real GitHub API and one
+real company's real homepage (not just fixtures) before this was called done — see the delivery
+report for exactly what was checked and what it found. Automated tests remain 100% offline (fake
+fetch injection, no real network, no real Supabase, no Anthropic calls whatsoever).
+
+---
+
 ## 6. AI / model philosophy
 
 - **Deterministic code does the work whenever it practically can.** The entire V2-1 funnel — parsing,
@@ -382,7 +466,10 @@ query set are both tuning targets, not obviously "right" yet.
 | Phase 1 (Claude-web discovery) | **[BUILT]** | Discovery via Claude `web_search`/`web_fetch`, verification, deterministic validation/dedup. Dry-run only, no write path. Timeout/shutdown hardening complete. Still present and functional, but no longer primary discovery. |
 | V2-0 (safety/budget/audit foundation) | **[BUILT]** | Raw-lead ledger, `$0.75` budget guard + cost ledger, fatal-API-error abort, offline HTTP/DB snapshot+replay. |
 | V2-1 (deterministic discovery funnel) | **[BUILT]** | RSS/Google-News/YC/Techstars providers, deterministic extraction/prefilter/clustering/dedup/domain-resolution/ranking, offline eval harness with measured recall. See §5. |
-| V2-2 | **[PLANNED, not started]** | Per the original approved plan: bounded Haiku-class triage/disambiguation over funnel finalists, Sonnet escalation reserved for genuinely ambiguous/high-value cases, an "exploration slot" in the architecture. None of this exists yet — do not start it without explicit approval. |
+| Signal-intelligence research | **[DONE — research/design only]** | A wide survey of "momentum/behavioral" signals (hiring, GitHub, website structure, funding/regulatory, community, etc.) beyond V2-1's event signals, with feasibility notes and a prioritized recommendation. Superseded the originally-planned V2-2 scope below — see the delivery report for the full analysis. |
+| V2-2A (Signal Foundation) | **[BUILT]** | The narrow first build from that research: source resolution + hiring (ATS) and GitHub observation collectors + a deterministic, versioned, explainable signal-derivation engine. No score, no alerts, no other signal families yet. See §5A. |
+| V2-2B+ (remaining signal families, corroboration, a real score) | **[PLANNED, not yet scoped in detail]** | Website-structure monitoring, SEC Form D, cross-family corroboration, and eventually a transparent momentum/Radar score are all still research-stage ideas, not committed plans — see the V2-2A delivery report's "what remains" section. Do not start any of it without explicit approval. |
+| ~~V2-2 (Haiku triage / Sonnet escalation on funnel finalists)~~ | **superseded** | The originally-approved V2-2 scope (bounded AI triage/escalation directly on V2-1's funnel output) was reconsidered after the signal-intelligence research and replaced by V2-2A above. Entity-resolution AI fallback (a different, narrower idea) is architected in V2-2A but not implemented — see §5A. |
 | V2-3 | **[not yet scoped]** | Not defined by the user at time of writing. Do not invent scope for it. |
 | Controlled database writes ("Phase 2") | **[PLANNED, not started]** | Writing accepted companies/events to `companies`/`discovery_events`. Requires explicit approval; no write path exists in code today, and the DB schema is frozen until then. |
 | Automation (scheduled runs) | **[PLANNED, not started]** | E.g. a scheduled daily run. Explicitly deferred — no GitHub Actions workflow or other scheduler exists; do not create one without being asked. |
@@ -429,10 +516,16 @@ process — rather than pre-building for it now.
 - **Never make a live Anthropic API call from an automated test or from `--replay`/offline mode.**
 - **Never add a database write path without explicit, current approval** — even a "harmless" one. The
   write-guard tests (`test/readonly.test.ts` and the V2-1 equivalents) exist specifically to catch this
-  by accident; do not delete, weaken, or work around them.
+  by accident; do not delete, weaken, or work around them. The one existing exception
+  (`src/signals/store.ts`, V2-2A) is itself guarded: it may only `insert`/`upsert` into
+  `signal_sources`/`observations`/`signals`, checked by a test that inspects every `.from(...)` call
+  in that file by name. Do not add a second write-capable file, and do not let that one file's writes
+  reach `companies`/`discovery_events`, `update`/`delete` `observations`/`signals`, or touch schema.
 - **Never modify the `companies`/`discovery_events` schema, RLS, grants, or seed data** without the user
   explicitly asking. The 10/10 row counts are a fixed baseline other things (dedup tests, eval labels)
-  are measured against.
+  are measured against. (`signal_sources`/`observations`/`signals`, added in V2-2A, are a separate,
+  additive concern — that baseline doesn't apply to them, but they have their own posture: RLS on, zero
+  `anon`/`authenticated` grants, append-only grants on `observations`/`signals`. Don't weaken that either.)
 - **Never raise the `$0.75` absolute budget ceiling** (`ABSOLUTE_BUDGET_CEILING_USD`) without approval,
   and never let a new spending call path bypass `BudgetGuard`.
 - **Never reintroduce unbounded/open-ended agentic web-search discovery loops** as a primary mechanism —
@@ -445,41 +538,54 @@ process — rather than pre-building for it now.
   `setTimeout`+`AbortController`+`clearTimeout` pattern in `src/deadline.ts: timeoutScope` (or the local
   equivalents in `src/sources/fetcher.ts`/`src/http.ts`); a bare `AbortSignal.timeout()` leaks a
   process-keeping timer, discovered and fixed this session.
-- **Don't start V2-2, V2-3, database writes, or automation without explicit approval** — each is a
-  distinct, separately-approved phase (§9). Frontend V1 exists (§10); further frontend features
-  (enrichment, watchlists, comparison, alerts, a real backend-derived score) still need approval too.
+- **Don't start V2-2B+, V2-3, database writes to `companies`/`discovery_events`, or automation without
+  explicit approval** — each is a distinct, separately-approved phase (§9). Frontend V1 exists (§10);
+  further frontend features (enrichment, watchlists, comparison, alerts, a real backend-derived score,
+  or surfacing V2-2A signals at all) still need approval too — V2-2A was built with NO frontend changes.
 - **Never expose `SUPABASE_SERVICE_ROLE_KEY` to browser code.** In `frontend/`, only
   `src/lib/supabase/server-client.ts` (marked `import "server-only"`) may read it; never import that
   module, or reference the key, from a `"use client"` file.
 - **Keep the funnel deterministic.** If you add anything under `src/funnel/`, `src/sources/`, or
   `src/eval/` that calls an LLM, you will fail the static guard test — that test is intentional, not a
-  bug to route around.
+  bug to route around. The same applies to `src/signals/`: its guard test asserts nothing there calls
+  `resolveAmbiguousEntityWithAi` (the architected-but-unwired AI fallback in
+  `src/signals/resolution-ai-fallback.ts`) — wiring it in is a deliberate future decision, not an
+  oversight to "fix" by connecting it.
+- **`src/signals/velocity.ts`'s strictness is deliberate, not overcautious.** Do not loosen
+  `compareWindow` to accept a shorter gap than the requested window "close enough," and do not remove
+  `isPersistent`'s check without understanding why (see §5A) — both exist specifically so a signal
+  never overclaims a trend the data doesn't actually support.
 
 ---
 
 ## 12. Current project status
 
-**Backend**: V2-0 and V2-1 are both complete, tested (257/257 passing, strict `tsc --noEmit` clean),
-committed (`3c1d5c6`, plus a documentation-only `d9837dc`), and pushed to `origin/main`. The database
-remains exactly as it was before any V2 work (10 companies / 10 discovery_events, schema frozen). No
-live Anthropic calls have been made by the V2-1 funnel at any point; Phase 1's Claude-web pipeline is
-present and functional but is no longer the primary discovery path.
+**Backend discovery**: V2-0 and V2-1 are both complete and pushed to `origin/main`. No live Anthropic
+calls have been made by the V2-1 funnel at any point; Phase 1's Claude-web pipeline is present and
+functional but is no longer the primary discovery path.
 
-**Frontend**: V1 (§10) is built at `frontend/` — build/typecheck/lint clean, verified against live
-Supabase data, light/dark theme implemented and verified. As of this writing it is **local-only,
-reviewed and approved in direction by the user, not yet committed or pushed** — it exists only in the
-working tree, gitignored secrets aside (`frontend/.env.local`). Commit/push happens only once the
-user explicitly asks.
+**Signal foundation**: V2-2A (§5A) is complete — `src/signals/`, the three new tables (migration
+applied to the live database), tested, and live-verified against the real GitHub API and one real
+company. Not yet committed/pushed as of this writing; see the delivery report for the exact state.
+
+**Frontend**: V1 (§10) is built at `frontend/` and has been committed and pushed to `origin/main`
+(`1fc56e8`) — build/typecheck/lint clean, verified against live Supabase data, light/dark theme
+implemented and verified. Not touched by V2-2A.
 
 **Logical next decisions** (all require explicit user approval before any code is written):
-1. Whether/how to scope **V2-2** (Haiku triage, Sonnet escalation for ambiguous cases, the exploration
-   slot) — and specifically what "ambiguous enough to escalate" should mean given today's ranking output.
-2. How to close the domain-resolution gap (5/8 primary finalists currently unresolved) — likely the
-   highest-leverage recall improvement available before adding any AI verification stage.
-3. Whether to expand the Google News query set / RSS registry to close coverage gaps like heylogin.
-4. Whether/when a real backend-derived score (see §10) should replace the removed frontend heuristic,
-   and what should back it.
-5. When to approve **controlled database writes** ("Phase 2") — still not implemented anywhere in code.
+1. Whether/how to scope **V2-2B+** — which remaining signal families (website-structure monitoring,
+   SEC Form D, others from the research report) to build next, if any, and when cross-family
+   corroboration and a real transparent momentum score are worth attempting.
+2. Whether to wire in the architected-but-unused AI entity-resolution fallback (§5A), and under what
+   cost ceiling — deterministic resolution alone leaves some real companies' sources unresolved.
+3. How to close the domain-resolution gap in V2-1's OWN funnel (5/8 primary finalists currently
+   unresolved) — a separate, still-open item from before V2-2A, not superseded by it.
+4. Whether to expand the Google News query set / RSS registry to close V2-1 coverage gaps like heylogin.
+5. Whether/when V2-2A's signals should be surfaced in the frontend at all (a "Signals" panel was
+   explicitly out of scope for V2-2A) and whether/when a real backend-derived score should exist.
+6. When to approve **controlled database writes to `companies`/`discovery_events`** ("Phase 2") — still
+   not implemented anywhere in code. (V2-2A's writes to the three new signal tables are a separate,
+   narrower, already-approved exception — see §11.)
 
 Note on this document's provenance: the repository's git history is thin (two commits total — the
 project was built interactively and committed after the fact), so §4's "history and why" is

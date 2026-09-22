@@ -21,6 +21,11 @@ export interface FetchOptions {
   signal?: AbortSignal;
   /** Provider tag for statistics. */
   provider?: string;
+  /** Additional request headers (e.g. an API auth token). Never required; merged after the
+   * default user-agent/accept, so a caller can override either by name. Added for V2-2A's GitHub
+   * collector (optional `Authorization` for a higher rate limit) — every other caller is
+   * unaffected, since this defaults to none. */
+  headers?: Record<string, string>;
 }
 
 export interface Fetcher {
@@ -128,7 +133,11 @@ export class PoliteFetcher implements Fetcher {
         method: "GET",
         redirect: "follow",
         signal,
-        headers: { "user-agent": this.#ua, accept: options.accept ?? "application/rss+xml, application/atom+xml, application/xml, text/xml, text/html, application/json;q=0.9, */*;q=0.5" },
+        headers: {
+          "user-agent": this.#ua,
+          accept: options.accept ?? "application/rss+xml, application/atom+xml, application/xml, text/xml, text/html, application/json;q=0.9, */*;q=0.5",
+          ...options.headers,
+        },
       });
       const chunks: Uint8Array[] = [];
       let bytes = 0;

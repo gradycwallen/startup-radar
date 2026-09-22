@@ -10,7 +10,13 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-test("PHASE 1 GUARD: no write-capable database call exists anywhere under src/", () => {
+// V2-2A introduces exactly ONE narrow, deliberate exception to "read-only": src/signals/store.ts
+// may write, but ONLY insert/upsert (never update/delete on data, never DDL), and ONLY to the
+// three new V2-2A tables. Every other file under src/ — including the rest of src/signals/ — is
+// held to the original, unweakened Phase 1 rule. See root CLAUDE.md's V2-2A section.
+const WRITE_GUARD_EXEMPT_FILE = join("src", "signals", "store.ts");
+
+test("PHASE 1 + V2-2A GUARD: no write-capable database call exists anywhere under src/ except the one whitelisted signal store", () => {
   const forbidden = [
     /\.\s*(insert|update|upsert|delete)\s*\(/,
     /\.\s*rpc\s*\(/,
@@ -20,15 +26,25 @@ test("PHASE 1 GUARD: no write-capable database call exists anywhere under src/",
   ];
   const offenders: string[] = [];
   for (const file of sourceFiles("src")) {
+    if (file === WRITE_GUARD_EXEMPT_FILE) continue;
     const text = readFileSync(file, "utf8");
     for (const re of forbidden) if (re.test(text)) offenders.push(`${file}: ${re}`);
   }
   assert.deepEqual(offenders, []);
 });
 
-test("PHASE 1 GUARD: only db.ts touches supabase-js, and it only issues select/count reads", () => {
+test("V2-2A GUARD: the one whitelisted signal store writes ONLY insert/upsert (never update/delete/DDL) and NEVER touches companies or discovery_events", () => {
+  const text = readFileSync(WRITE_GUARD_EXEMPT_FILE, "utf8");
+  assert.ok(!/\.\s*(update|delete)\s*\(/.test(text), "store.ts must never call .update()/.delete() — observations/signals are append-only, signal_sources only ever upserts");
+  assert.ok(!/\.\s*rpc\s*\(/.test(text) && !/\b(TRUNCATE|ALTER\s+TABLE|DROP\s+TABLE|CREATE\s+TABLE)\b/i.test(text), "store.ts must never touch schema or call rpc()");
+  const tableCalls = [...text.matchAll(/\.from\(\s*["'`]([^"'`]+)["'`]\s*\)/g)].map((m) => m[1]);
+  assert.ok(tableCalls.length > 0, "store.ts should reference at least one table");
+  assert.deepEqual([...new Set(tableCalls)].sort(), ["observations", "signal_sources", "signals"], "store.ts must touch ONLY the three V2-2A tables — never companies or discovery_events");
+});
+
+test("PHASE 1 + V2-2A GUARD: only db.ts and the whitelisted signal store touch supabase-js; db.ts only issues select/count reads", () => {
   const importers = sourceFiles("src").filter((f) => /@supabase\/supabase-js/.test(readFileSync(f, "utf8")));
-  assert.deepEqual(importers, [join("src", "db.ts")]);
+  assert.deepEqual(importers.sort(), [join("src", "db.ts"), WRITE_GUARD_EXEMPT_FILE].sort());
   const db = readFileSync(join("src", "db.ts"), "utf8");
   const fromCalls = db.match(/\.from\(/g)?.length ?? 0;
   const selectCalls = db.match(/\.select\(/g)?.length ?? 0;
@@ -49,6 +65,14 @@ test("V2-0 GUARD: Anthropic API calls exist ONLY in claude.ts (the budget-guarde
     if (file !== join("src", "main.ts") && /new\s+Anthropic\s*\(/.test(text)) offenders.push(`${file}: constructs an Anthropic client outside main.ts`);
   }
   assert.deepEqual(offenders, []);
+});
+
+test("V2-2A GUARD: the architected AI entity-resolution fallback is never invoked from anywhere in V2-2A", () => {
+  const definingFile = join("src", "signals", "resolution-ai-fallback.ts");
+  const offenders = sourceFiles(join("src", "signals"))
+    .filter((f) => f !== definingFile)
+    .filter((f) => /resolveAmbiguousEntityWithAi/.test(readFileSync(f, "utf8")));
+  assert.deepEqual(offenders, [], "no file besides resolution-ai-fallback.ts itself may reference resolveAmbiguousEntityWithAi in V2-2A");
 });
 
 test("V2-0 GUARD: budget, ledger, snapshot and replay modules import neither the Anthropic SDK nor Supabase", () => {
