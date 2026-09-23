@@ -476,7 +476,7 @@ LIVE.
 
 ---
 
-## 5C. Current V2-1.1 state (Automated Discovery Runs) — [BUILT, locally validated, not yet committed]
+## 5C. Current V2-1.1 state (Automated Discovery Runs) — [BUILT, CONFIGURED, LIVE]
 
 Operationalizes V2-1: a CLI that runs the existing deterministic discovery funnel unattended and
 persists genuinely new companies. Adds **no new signal families, no new providers, no schema
@@ -485,11 +485,14 @@ repeatedly, on its own, with a narrow write path." Discovery and signal observat
 fully separate systems and workflows; a company this milestone inserts becomes eligible for signal
 observation automatically on that workflow's *next* run (via `ExistingIndex`/resolution — no direct
 cross-invocation was built or is needed). Same three-state discipline as §5B: **BUILT** (code exists
-and is tested) — true. **CONFIGURED** (workflow committed + secrets present) — not yet true, pending
-commit/push. **LIVE** (a real scheduled or dispatched run has completed successfully in Actions) —
-not yet true; one **local** live run has succeeded against the real database (see below), but no
-Actions run has occurred yet. Do not describe this automation as live until an Actions run actually
-has.
+and is tested) — true. **CONFIGURED** (workflow committed + secrets present) — true; the workflow is
+committed on `main` (`aebebcb`) and reuses the `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` secrets
+already set for §5B. **LIVE** (a real scheduled or dispatched run has completed successfully in
+Actions) — true; a manual `workflow_dispatch` run has completed successfully in the Actions tab (in
+addition to the earlier local live run against the real database, see below). A real scheduled
+(cron) run has not fired yet — the workflow was only pushed to `main` today, before its 12:17 UTC
+trigger time — but per the same standard already applied to §5B (a dispatched run is sufficient to
+call an automation LIVE), that is not a blocker to this status.
 
 **CLI** (`npm run discover`, `src/discover-main.ts`): argv/env/logging only — reuses the existing
 V2-1 funnel (`runFunnel`, `ExistingIndex`, `PoliteFetcher`, homepage checker, `DEFAULT_FUNNEL_CONFIG`)
@@ -567,16 +570,20 @@ each per-candidate result but never added it into the run-level summary total, s
 under-reported (`events_inserted: 0` despite real evidence) — fixed with the missing aggregation line
 and a regression test.
 
-**GitHub Actions** (`.github/workflows/discovery.yml`, committed but not yet pushed — see §12): daily
+**GitHub Actions** (`.github/workflows/discovery.yml`, committed on `main` — `aebebcb`): daily
 cron (`17 12 * * *` UTC — one hour before the signals workflow's 13:17 UTC, so newly discovered
 companies are already persisted before that pass runs; the ordering is a courtesy, not a hard
 dependency) plus `workflow_dispatch`; `permissions: contents: read`; a concurrency group prevents
 overlapping runs; 15-minute timeout; `actions/checkout@v4` + `actions/setup-node@v4` (Node 24) +
 `npm ci` + `npm run discover` (no flags — the CLI's own built-in caps bound the run). **Required
 repository secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`** only — both already exist (added
-for §5B); no new secret was needed, and none would have been added without stopping to ask first, per
-the brief. No GitHub API access is needed at all for this workflow (unlike §5B) since none of the 10
-discovery providers touch `api.github.com`.
+for §5B); no new secret was needed. No GitHub API access is needed at all for this workflow (unlike
+§5B) since none of the 10 discovery providers touch `api.github.com`. A manual `workflow_dispatch`
+run has completed successfully in the Actions tab; it found zero new companies that pass (a normal,
+expected outcome — see the funnel's own "zero new companies is valid" design), leaving live counts
+unchanged. The first real scheduled (cron) run has not occurred yet; nothing about the workflow
+itself is in question — it's purely that today's 12:17 UTC trigger time had already passed before
+the workflow was pushed.
 
 ---
 
@@ -773,13 +780,13 @@ the delivery report for the reasoning against adding one now).
 | Signal-intelligence research | **[DONE — research/design only]** | A wide survey of "momentum/behavioral" signals (hiring, GitHub, website structure, funding/regulatory, community, etc.) beyond V2-1's event signals, with feasibility notes and a prioritized recommendation. Superseded the originally-planned V2-2 scope below — see the delivery report for the full analysis. |
 | V2-2A (Signal Foundation) | **[BUILT]** | The narrow first build from that research: source resolution + hiring (ATS) and GitHub observation collectors + a deterministic, versioned, explainable signal-derivation engine. No score, no alerts, no other signal families yet. See §5A. |
 | V2-2A.1 (Automated Observation Runs) | **[BUILT, CONFIGURED, LIVE]** | Operationalizes V2-2A: `npm run signals` CLI, monitoring/freshness policy, failure isolation, and a GitHub Actions daily workflow (`17 13 * * *` UTC). Committed/pushed; secrets configured; a manual `workflow_dispatch` run has completed successfully. See §5B. |
-| V2-1.1 (Automated Discovery Runs) | **[BUILT, locally live-validated, not yet committed]** | Operationalizes V2-1: `npm run discover` CLI, conservative acceptance/write policy, hard run caps, and a GitHub Actions daily workflow (`17 12 * * *` UTC, not yet pushed). One capped local live run succeeded against the real database (3 companies, 17 events, $0 cost). See §5C and the delivery report for exact next steps before commit/push. |
+| V2-1.1 (Automated Discovery Runs) | **[BUILT, CONFIGURED, LIVE]** | Operationalizes V2-1: `npm run discover` CLI, conservative acceptance/write policy, hard run caps, and a GitHub Actions daily workflow (`17 12 * * *` UTC, committed on `main`). One capped local live run (3 companies, 17 events, $0 cost) plus a successful `workflow_dispatch` run in Actions (0 new companies that pass — a valid outcome). See §5C. |
 | V2-2B.2 (Website Structural Monitoring) | **[BUILT, LIVE, COMPLETE]** | Deterministic `website` signal family: one source/company, 5 semantic page types + pre-launch marker, present/absent/unknown, one cold-start footprint signal, 6 appearance-transition signals, no removal signals, additive migration applied, live-validated on 5 real companies. No AI, no browser rendering. See §5D. |
 | V2-2B+ (SEC Form D, cross-family corroboration, a real score) | **[PLANNED, not yet scoped in detail]** | Website-structure monitoring (above) is now built. SEC Form D, cross-family corroboration, and eventually a transparent momentum/Radar score remain research-stage ideas, not committed plans — see the V2-2A delivery report's "what remains" section. Do not start any of it without explicit approval. |
 | ~~V2-2 (Haiku triage / Sonnet escalation on funnel finalists)~~ | **superseded** | The originally-approved V2-2 scope (bounded AI triage/escalation directly on V2-1's funnel output) was reconsidered after the signal-intelligence research and replaced by V2-2A above. Entity-resolution AI fallback (a different, narrower idea) is architected in V2-2A but not implemented — see §5A. |
 | V2-3 | **[not yet scoped]** | Not defined by the user at time of writing. Do not invent scope for it. |
 | Controlled database writes to `companies`/`discovery_events` ("Phase 2") | **[BUILT, narrow scope — V2-1.1]** | `src/discovery/store.ts` writes new companies + their initial events only, under hard caps, via `npm run discover`. Does not (yet) add events to already-existing companies — see §5C. Any broader write scope still requires explicit approval. |
-| Automation (scheduled runs) | **[LIVE for signals; BUILT, pending commit for discovery]** | Two separate GitHub Actions workflows: `.github/workflows/signals.yml` (§5B, live) and `.github/workflows/discovery.yml` (§5C, built and locally validated, not yet committed). |
+| Automation (scheduled runs) | **[LIVE for both signals and discovery]** | Two separate GitHub Actions workflows: `.github/workflows/signals.yml` (§5B, live, scheduled runs confirmed firing) and `.github/workflows/discovery.yml` (§5C, live via a successful `workflow_dispatch` run; first scheduled cron fire still pending — the workflow was pushed after today's trigger time). |
 | Frontend / product | **[V1 BUILT + V2-3A BUILT]** | Radar feed, Explore, Company Detail, light/dark theme (V1), plus a Signal Intelligence section on Company Detail (V2-3A). Read-only against Supabase, no enrichment/watchlists/comparison/alerts, no signal score yet. See §10. |
 
 ---
@@ -947,13 +954,14 @@ the real GitHub API and one real company.
 `.github/workflows/signals.yml` (daily cron `17 13 * * *` UTC), repository secrets configured, and a
 manual `workflow_dispatch` run has completed successfully end-to-end.
 
-**Automated discovery runs**: V2-1.1 (§5C) is code-complete and tested (`src/discover-main.ts`,
-`src/discovery/accept.ts`/`orchestrate.ts`/`store.ts`/`limits.ts`, `.github/workflows/discovery.yml`),
-and has had **one capped live run against the real database** (3 companies, 17 events inserted, 0
-duplicates, $0 external cost, signal tables unaffected). **Not yet committed/pushed as of this
-writing** — the GitHub Actions automation is **BUILT but not yet CONFIGURED or LIVE**: the workflow
-file exists locally but is not on `main`, and no Actions run (scheduled or dispatched) has occurred.
-See the delivery report for the exact next steps before commit/push.
+**Automated discovery runs**: V2-1.1 (§5C) is complete, committed/pushed (`aebebcb`), and **LIVE**
+— `src/discover-main.ts`, `src/discovery/accept.ts`/`orchestrate.ts`/`store.ts`/`limits.ts`,
+`.github/workflows/discovery.yml` (daily cron `17 12 * * *` UTC). Validated with one capped local
+live run against the real database (3 companies, 17 events inserted, 0 duplicates, $0 external cost,
+signal tables unaffected) and a successful `workflow_dispatch` run in the Actions tab (0 new
+companies that pass — dedup correctly found nothing new to add, a valid outcome). The first real
+scheduled cron run hasn't occurred yet — the workflow was pushed after today's 12:17 UTC trigger
+time — but this is a timing fact, not an open item.
 
 **Frontend**: V1 (§10) is built at `frontend/` and has been committed and pushed to `origin/main`
 (`1fc56e8`) — build/typecheck/lint clean, verified against live Supabase data, light/dark theme
@@ -975,22 +983,19 @@ typecheck clean, $0 external cost, zero Anthropic calls. Live DB counts after va
 `companies=18`, `discovery_events=47`, `signal_sources=7`, `observations=38`, `signals=5`.
 
 **Logical next decisions** (all require explicit user approval before any code is written):
-1. Review and, if approved, commit/push V2-1.1, then run `workflow_dispatch` on
-   `.github/workflows/discovery.yml` and confirm it succeeds in the Actions tab (§5C) — the one
-   concrete blocker to discovery automation actually running unattended.
-2. Whether/how to scope the **remaining** V2-2B+ work — website-structure monitoring is now built
+1. Whether/how to scope the **remaining** V2-2B+ work — website-structure monitoring is now built
    (§5D); SEC Form D, cross-family corroboration, and a real transparent momentum score are still
    open, research-stage questions.
-3. Whether to wire in the architected-but-unused AI entity-resolution fallback (§5A), and under what
+2. Whether to wire in the architected-but-unused AI entity-resolution fallback (§5A), and under what
    cost ceiling — deterministic resolution alone leaves some real companies' sources unresolved.
-4. How to close the domain-resolution gap in V2-1's OWN funnel (5/8 primary finalists currently
+3. How to close the domain-resolution gap in V2-1's OWN funnel (5/8 primary finalists currently
    unresolved) — a separate, still-open item from before V2-2A, not superseded by it.
-5. Whether to expand the Google News query set / RSS registry to close V2-1 coverage gaps like heylogin.
-6. Whether/when V2-2A's signals should be surfaced in the frontend at all (a "Signals" panel was
-   explicitly out of scope for V2-2A) and whether/when a real backend-derived score should exist.
-7. Whether/when to extend V2-1.1 to also add new `discovery_events` to already-existing companies
+4. Whether to expand the Google News query set / RSS registry to close V2-1 coverage gaps like heylogin.
+5. Whether/when a real backend-derived momentum/signal score should exist — V2-3A (§10) surfaced the
+   raw signal data itself in the frontend; a score remains a separate, still-open decision.
+6. Whether/when to extend V2-1.1 to also add new `discovery_events` to already-existing companies
    (explicitly scoped out of V2-1.1 itself — see §5C).
-8. When to approve further **controlled database writes to `companies`/`discovery_events`** beyond
+7. When to approve further **controlled database writes to `companies`/`discovery_events`** beyond
    V2-1.1's narrow new-companies-only path — see §11.
 
 Note on this document's provenance: the repository's git history is thin (four commits as of V2-2A —
