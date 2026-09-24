@@ -72,3 +72,36 @@ export function scanForSourceLinks(links: readonly HtmlLink[]): LinkCandidate[] 
   }
   return out;
 }
+
+/**
+ * V2-2C.1: finds a supported-source URL (GitHub/Greenhouse/Lever/Ashby) EMBEDDED anywhere in raw
+ * page text — inline `<script>` JS, server-rendered JSON, escaped HTML — not just a literal
+ * `<a href>` or `<script src>`. Built for cases like a careers page that lists individual Ashby
+ * application URLs (`jobs.ashbyhq.com/acme/<uuid>/application`) inside server-rendered JSON, with no
+ * plain anchor or script tag pointing at the board itself anywhere on the page.
+ *
+ * Deliberately hostname-anchored, never a generic "looks like a URL" scan: the pattern can ONLY
+ * match one of the exact hosts scanForSourceLinks already recognizes, so this never invents a new
+ * KIND of candidate — it only finds MORE OCCURRENCES of kinds scanForSourceLinks already knows how
+ * to parse. Every match is handed to the caller to run through the SAME scanForSourceLinks
+ * segment-parsing (which already reads only `segments[0]` — or `[0]`/`[1]` for a GitHub repo —
+ * regardless of how many path segments follow, so a per-job URL like `.../acme/<uuid>/application`
+ * normalizes to the same board candidate as a bare `.../acme` link) and from there through the SAME
+ * identity confirmation (confirmGithub/confirmAts) as a plain anchor. This function only widens
+ * WHERE a candidate URL can be found; it never changes what counts as confirmation.
+ */
+const EMBEDDED_HOST_PATTERN = /https?:\/\/(?:www\.)?(?:github\.com|boards\.greenhouse\.io|job-boards\.greenhouse\.io|jobs\.lever\.co|jobs\.ashbyhq\.com)\/[^\s"'<>\\]*/gi;
+
+export function extractEmbeddedSourceLinks(text: string): HtmlLink[] {
+  if (!text) return [];
+  const out: HtmlLink[] = [];
+  const seen = new Set<string>();
+  EMBEDDED_HOST_PATTERN.lastIndex = 0;
+  for (let m = EMBEDDED_HOST_PATTERN.exec(text); m; m = EMBEDDED_HOST_PATTERN.exec(text)) {
+    const href = m[0].replace(/[.,;:)\]}]+$/, "");
+    if (seen.has(href)) continue;
+    seen.add(href);
+    out.push({ href, text: "" });
+  }
+  return out;
+}

@@ -1,8 +1,8 @@
 import { normalizeDomain } from "../domain.ts";
 import { aliasKey, nameDomainSimilarity, nameKey } from "../funnel/text.ts";
 import type { Fetcher } from "../sources/fetcher.ts";
-import { extractLinks } from "../sources/html.ts";
-import { scanForSourceLinks, type LinkCandidate } from "./sources/link-scan.ts";
+import { extractLinks, extractScriptSrcs, type HtmlLink } from "../sources/html.ts";
+import { extractEmbeddedSourceLinks, scanForSourceLinks, type LinkCandidate } from "./sources/link-scan.ts";
 import type { CompanyContext, ResolutionMethod, SignalSource, SourceType } from "./types.ts";
 
 /**
@@ -10,9 +10,17 @@ import type { CompanyContext, ResolutionMethod, SignalSource, SourceType } from 
  * V2-2A's collectors can observe (a GitHub org/repo, an ATS board). Runs entirely without AI.
  *
  * Evidence used, in order:
- *  1. Links on the company's OWN homepage (and, if nothing found there, its `/careers` page) —
- *     data we already have (the company's `domain`), fetched politely through the same Fetcher
- *     the discovery funnel uses.
+ *  1. Candidate URLs found on the company's OWN homepage, and, if nothing found there, its
+ *     `/careers` page, and, if still nothing, its `/jobs` page — data we already have (the
+ *     company's `domain`), fetched politely through the same Fetcher the discovery funnel uses.
+ *     Candidate discovery (V2-2C.1) looks at THREE places on each fetched page, not just plain
+ *     anchors: a literal `<a href>` (`extractLinks`), a `<script src>` (`extractScriptSrcs` — some
+ *     sites embed a job-board widget this way instead of linking to it), and the exact supported
+ *     hosts embedded anywhere else in the page's raw text (`extractEmbeddedSourceLinks` — some
+ *     sites server-render individual per-job application URLs into JSON with no bare board link or
+ *     script tag anywhere on the page). All three feed the SAME `scanForSourceLinks` segment
+ *     parsing and dedup; broadening WHERE a candidate can be found never changes WHAT counts as
+ *     one — a string containing a supported host is a candidate, never proof of identity.
  *  2. For each candidate found that way, a CONFIRMATION check against the candidate's own public
  *     metadata: a GitHub org/user's public `blog`/`html_url` field pointing back at the company's
  *     domain, or an ATS board's own reported organization name matching the company name.
@@ -41,7 +49,8 @@ export interface UnresolvedSource {
 export interface ResolutionResult {
   resolved: Omit<SignalSource, "id">[];
   unresolved: UnresolvedSource[];
-  /** Pages actually fetched, for observability/testing — never more than 3 per company. */
+  /** Pages actually fetched, for observability/testing — never more than 3 per company (homepage,
+   * `/careers`, `/jobs` — each only fetched if the previous one produced no ATS candidate). */
   pagesChecked: string[];
 }
 
@@ -123,19 +132,43 @@ async function confirmAts(fetcher: Fetcher, candidate: LinkCandidate, company: C
   return { confirmed: false, evidence: "", reachable: false };
 }
 
+/** Every candidate URL discoverable on one fetched page: real anchors, script-tag `src`s, and the
+ * exact supported hosts embedded anywhere else in the page's raw text (see this module's own doc
+ * comment). Feeds a single shared `scanForSourceLinks` call — never three separate matching paths. */
+function gatherCandidateLinks(html: string, baseUrl: string): HtmlLink[] {
+  return [...extractLinks(html, baseUrl), ...extractScriptSrcs(html, baseUrl), ...extractEmbeddedSourceLinks(html)];
+}
+
+const hasAtsCandidate = (candidates: readonly LinkCandidate[]) => candidates.some((c) => c.sourceType === "greenhouse" || c.sourceType === "lever" || c.sourceType === "ashby");
+
 export async function resolveCompanySources(company: CompanyContext, fetcher: Fetcher, signal?: AbortSignal): Promise<ResolutionResult> {
   const pagesChecked: string[] = [];
-  const homepageHtml = await getText(fetcher, `https://${company.domain}/`, signal, "signals-resolve-homepage");
-  pagesChecked.push(`https://${company.domain}/`);
-  let links = homepageHtml ? extractLinks(homepageHtml, `https://${company.domain}/`) : [];
+  const homepageUrl = `https://${company.domain}/`;
+  const homepageHtml = await getText(fetcher, homepageUrl, signal, "signals-resolve-homepage");
+  pagesChecked.push(homepageUrl);
+  let links = homepageHtml ? gatherCandidateLinks(homepageHtml, homepageUrl) : [];
   let candidates = scanForSourceLinks(links);
 
   // Nothing found on the homepage: try the conventional careers path once (one extra request, never more).
-  if (!candidates.some((c) => c.sourceType === "greenhouse" || c.sourceType === "lever" || c.sourceType === "ashby")) {
-    const careersHtml = await getText(fetcher, `https://${company.domain}/careers`, signal, "signals-resolve-careers");
-    pagesChecked.push(`https://${company.domain}/careers`);
+  if (!hasAtsCandidate(candidates)) {
+    const careersUrl = `https://${company.domain}/careers`;
+    const careersHtml = await getText(fetcher, careersUrl, signal, "signals-resolve-careers");
+    pagesChecked.push(careersUrl);
     if (careersHtml) {
-      links = links.concat(extractLinks(careersHtml, `https://${company.domain}/careers`));
+      links = links.concat(gatherCandidateLinks(careersHtml, careersUrl));
+      candidates = scanForSourceLinks(links);
+    }
+  }
+
+  // Still nothing: try /jobs once (some companies use this instead of /careers — see the V2-2C.1
+  // audit's finding). Same bounded, one-extra-request discipline as the /careers fallback above —
+  // never both a re-fetch AND a fallback in the same pass, only ever the next untried path.
+  if (!hasAtsCandidate(candidates)) {
+    const jobsUrl = `https://${company.domain}/jobs`;
+    const jobsHtml = await getText(fetcher, jobsUrl, signal, "signals-resolve-jobs");
+    pagesChecked.push(jobsUrl);
+    if (jobsHtml) {
+      links = links.concat(gatherCandidateLinks(jobsHtml, jobsUrl));
       candidates = scanForSourceLinks(links);
     }
   }

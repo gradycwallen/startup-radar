@@ -34,3 +34,23 @@ export function extractLinks(html: string, base?: string): HtmlLink[] {
   }
   return out;
 }
+
+/** Absolute http(s) `src` URLs found on <script> tags — never an anchor <a href> (see extractLinks).
+ * Some sites embed a job-board widget via a script tag rather than a plain link (e.g.
+ * `<script src="https://jobs.ashbyhq.com/acme/embed?version=2">`), which extractLinks alone would
+ * never see. Built for signals/resolution.ts's candidate discovery — see that module's own comment. */
+export function extractScriptSrcs(html: string, base?: string): HtmlLink[] {
+  if (!html) return [];
+  const out: HtmlLink[] = [];
+  for (const s of parseHtml(html).querySelectorAll("script")) {
+    const raw = s.getAttribute("src");
+    if (!raw) continue;
+    try {
+      const u = new URL(raw, base);
+      if (u.protocol === "http:" || u.protocol === "https:") out.push({ href: u.href, text: "" });
+    } catch {
+      /* skip unparseable src */
+    }
+  }
+  return out;
+}

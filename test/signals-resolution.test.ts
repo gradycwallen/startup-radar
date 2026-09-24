@@ -31,7 +31,7 @@ test("resolution: GitHub org linked from the homepage AND confirmed by its own w
   assert.deepEqual([r.source_type, r.external_id, r.resolution_method], ["github_org", "acmerobotics", "homepage_link_confirmed"]);
   assert.ok(r.resolution_confidence >= 0.9);
   assert.match(r.resolution_evidence, /website field/);
-  assert.deepEqual(requested, ["https://acmerobotics.com/", "https://acmerobotics.com/careers", "https://api.github.com/orgs/acmerobotics"]);
+  assert.deepEqual(requested, ["https://acmerobotics.com/", "https://acmerobotics.com/careers", "https://acmerobotics.com/jobs", "https://api.github.com/orgs/acmerobotics"]);
 });
 
 test("resolution: a linked GitHub repo whose slug closely matches the company name, but with NO confirming metadata -> homepage_link_name_match, lower confidence", async () => {
