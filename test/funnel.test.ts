@@ -314,6 +314,78 @@ test("FUNNEL: homepages are checked only for the top slice within the budget, an
   assert.ok(empirik.breakdown.domain.raw > gaia.breakdown.domain.raw);
 });
 
+// ---- EXPERIMENTAL domain guess + stronger identity verifier (2026-09-23) -----------------------------------------
+//
+// OFF BY DEFAULT (domainGuessBudget: 0 — see DEFAULT_FUNNEL_CONFIG's own comment). Every test here
+// explicitly opts in. "Noetive" (fixtureProviders' Google-News-redirect item, title "Noetive exits
+// stealth with $41M seed", no outbound_domains) is the entity with no domain candidate at all —
+// the same one used throughout this file's other domain tests.
+
+test("DOMAIN GUESS: OFF BY DEFAULT — attempts nothing unless explicitly enabled", async () => {
+  const { result, checked } = await runFixture();
+  assert.equal(result.counts.domain_guesses_attempted, 0);
+  assert.ok(!checked.includes("noetive.com"));
+  const noetive = result.ranked.find((r) => r.entity.name === "Noetive")!;
+  assert.equal(noetive.entity.domain.domain, null);
+});
+
+test("DOMAIN GUESS: STRONG evidence (funding amount from real discovery evidence found on the page) -> ACCEPTED", async () => {
+  const { result } = await runFixture({ domainGuessBudget: 20 }, (d) =>
+    d === "noetive.com"
+      ? { reachable: true, status: 200, text: "Noetive Inc. We're proud to announce our $41M seed round to build the future of noetive computing.", finalDomain: d }
+      : { reachable: true, status: 200, text: `${d.split(".")[0]} home page`, finalDomain: d },
+  );
+  const noetive = result.ranked.find((r) => r.entity.name === "Noetive")!;
+  assert.deepEqual([noetive.entity.domain.domain, noetive.entity.domain.trust], ["noetive.com", "linked"]);
+  assert.equal(result.counts.domain_guesses_accepted, 1);
+  const audit = result.domain_guess_audit.find((a) => a.name === "Noetive")!;
+  assert.equal(audit.accepted, true);
+  assert.ok(audit.strong.some((s) => s.category === "amount"));
+});
+
+test("DOMAIN GUESS: name-only (no independent evidence) -> REJECTED, entity stays unresolved", async () => {
+  const { result } = await runFixture({ domainGuessBudget: 20 }, (d) =>
+    d === "noetive.com" ? { reachable: true, status: 200, text: "Noetive — welcome to our website.", finalDomain: d } : { reachable: true, status: 200, text: `${d.split(".")[0]} home page`, finalDomain: d },
+  );
+  const noetive = result.ranked.find((r) => r.entity.name === "Noetive")!;
+  assert.equal(noetive.entity.domain.domain, null, "name-only match must never be accepted");
+  assert.equal(result.counts.domain_guesses_rejected, 1);
+  const audit = result.domain_guess_audit.find((a) => a.name === "Noetive")!;
+  assert.equal(audit.accepted, false);
+  assert.equal(audit.strong.length, 0);
+});
+
+test("DOMAIN GUESS: an unreachable guess is rejected and recorded in the audit trail, never silently dropped", async () => {
+  const { result } = await runFixture({ domainGuessBudget: 20 }, (d) => (d === "noetive.com" ? { reachable: false, error: "ENOTFOUND" } : { reachable: true, status: 200, text: `${d.split(".")[0]} home page`, finalDomain: d }));
+  const audit = result.domain_guess_audit.find((a) => a.name === "Noetive")!;
+  assert.equal(audit.reachable, false);
+  assert.equal(audit.accepted, false);
+  assert.match(audit.reason, /unreachable/);
+});
+
+test("DOMAIN GUESS (J): bounded by domainGuessBudget — a budget of 0 makes zero attempts; nothing unbounded", async () => {
+  const { result, checked } = await runFixture({ domainGuessBudget: 0 });
+  assert.equal(result.counts.domain_guesses_attempted, 0);
+  assert.equal(result.domain_guess_audit.length, 0);
+  assert.ok(!checked.includes("noetive.com"));
+});
+
+test("DOMAIN GUESS (K): an entity that ALREADY has a domain is never guessed at — untouched", async () => {
+  const { result, checked } = await runFixture({ domainGuessBudget: 20 });
+  assert.ok(!checked.includes("empirikcom"), "empirik already has a real linked domain — never re-guessed");
+  const empirik = result.ranked.find((r) => r.entity.name === "Empirik")!;
+  assert.equal(empirik.entity.domain.domain, "empirik.ai");
+  assert.ok(!result.domain_guess_audit.some((a) => a.name === "Empirik"), "an already-resolved entity never appears in the guess audit at all");
+});
+
+test("DOMAIN GUESS (L): existing structured/name/linked resolution methods are completely unaffected by enabling the guess budget", async () => {
+  const { result } = await runFixture({ domainGuessBudget: 20 });
+  const baud = result.ranked.find((r) => r.entity.name === "Baud")!;
+  assert.deepEqual([baud.entity.domain.domain, baud.entity.domain.trust], ["baudlabs.ai", "structured"]);
+  const empirik = result.ranked.find((r) => r.entity.name === "Empirik")!;
+  assert.deepEqual([empirik.entity.domain.domain, empirik.entity.domain.trust], ["empirik.ai", "linked"]);
+});
+
 test("FUNNEL: the whole run is deterministic (same inputs, same ranked output)", async () => {
   const brief = async () => (await runFixture()).result.ranked.map((r) => [r.entity.entity_id, r.score, r.selection]);
   assert.deepEqual(await brief(), await brief());

@@ -264,6 +264,82 @@ correct domain 3/8** (primary group); heylogin 0/1 (see below).
 **Known limitations (disclosed, not silently accepted):**
 - **Domain resolution is the weakest link** — 5 of 8 primary finalists still have no resolved domain,
   mostly Google-News-sourced entities whose URLs are unfetchable redirects with no linkable article.
+  **DOMAIN RESOLUTION EXPERIMENT — DEFAULT OFF (2026-09-23, three-round history below).**
+
+  *Initial experiment (reverted, not shipped):* a deterministic `{name}.com` guess-and-verify
+  strategy — guess a domain from the company name, accept it only if a real homepage check
+  confirmed reachability AND the company's own name on the page. In one live dry-run it did reduce
+  `unresolved_domain_count` from 9 to 5 out of 39 finalists considered, but a live precision audit
+  found 2 of the 10 real guesses it verified were wrong: **Ande** (a funded entertainment-booking
+  startup) matched `ande.com`, which is actually ANDE, an unrelated, already-established forensic
+  Rapid-DNA company; **Travix** (a funded on-chain-perpetuals startup) matched `travix.com`, which
+  is actually Travix International, an unrelated, already-established 450-employee travel agency.
+  Both passed verification because the *real, different* company's own homepage naturally contains
+  its own name. **Conclusion: name-on-page proves a name collision, not an identity match.** Fully
+  reverted — this exact code no longer exists in the repository, only this note remains.
+
+  *Second verifier (built, gated at `domainGuessBudget: 0`):* `src/funnel/domain-verify.ts`
+  replaced "name on page" with independent-evidence scoring against the entity's OWN discovery
+  context (investor names, funding amount, distinctive phrases, round stage, location, named
+  accelerator programs) plus explicit contradiction detection (scale/ownership language). A live
+  precision audit of this version found exactly one real acceptance (kWh Coffee → kwhcoffee.com,
+  correctly a real match) and zero wrong domains among the guesses it verified — a real improvement
+  over the first attempt, but with only one real acceptance to inspect, not yet a large enough
+  sample to trust.
+
+  *Independence-hardening pass (current state, still gated at `domainGuessBudget: 0`):* a follow-up
+  audit of that one real acceptance found its "independent" evidence wasn't fully independent after
+  all — the phrase2 hit was just the company's own name ("kwh coffee"), and the location hit
+  ("york") only existed because the investor was named "York Angels." Three deterministic fixes
+  followed: (1) company-name tokens are now excluded entirely from distinctive-phrase evidence,
+  even when no individual word is on the generic-vocabulary denylist; (2) investor names, named
+  accelerator/program names, and the company's own name are stripped out of the discovery-evidence
+  text BEFORE location words are extracted from it; (3) a general evidence token-overlap guard —
+  every accepted hit records the literal token(s) it consumed, and a later hit sharing a token with
+  an already-counted hit is discarded, never double-counted, regardless of its category label.
+  Round-stage and location were additionally reviewed and **downgraded from MODERATE to WEAK**
+  (logged for debugging, never counted toward acceptance) — a same-named, unrelated company at the
+  same common funding stage, or in the same city, is not unlikely, so neither is safe corroboration
+  on its own.
+
+  **Current evidence tiers:** STRONG (any one sufficient, given zero contradictions) — investor
+  name, funding amount, a genuinely distinctive 3-word phrase. MODERATE (two distinct categories
+  required) — a genuinely distinctive 2-word phrase, a named accelerator/program. WEAK / audit-only,
+  never counted — round stage, location. Company name itself contributes **zero** verification
+  weight anywhere; it is used only to generate the candidate domain guess.
+
+  **Acceptance rule:** `(≥1 independent strong signal OR ≥2 independent moderate signals) AND zero
+  contradictions`. Ambiguous/thin evidence stays unresolved — this is the intended, correct outcome,
+  not a bug to fix. Core rule this whole experiment is held to: *"A guessed domain may only be
+  accepted when there is independent evidence that the domain belongs to the SAME entity described
+  in the discovery evidence. Company name alone is never sufficient. Ambiguous cases remain
+  unresolved."*
+
+  **Known regression cases (all permanently tested, `test/domain-verify.test.ts`):** Ande → rejected
+  (real captured page, 0 strong/0 moderate). Travix → rejected (real captured page, ownership/scale
+  contradiction fires). kWh Coffee's historical acceptance → **now rejected**, since re-running it
+  under the hardened rules shows its two supporting signals were both non-independent — the
+  verifier was NOT weakened to preserve this one prior acceptance; precision took priority.
+
+  **Latest live shadow run** (real network, zero writes, `domainGuessBudget=20` override for the
+  audit only): 20 guesses attempted, **0 accepted**, zero known false positives. Considered
+  acceptable under this project's precision-first policy — the goal of this experiment is zero
+  wrong domains, not a target acceptance rate.
+
+  **Current production status — verified, not merely asserted:** `domainGuessBudget: 0` in
+  `DEFAULT_FUNNEL_CONFIG` (`src/funnel/funnel.ts`); no caller anywhere in `src/` overrides it; no
+  GitHub Actions workflow, environment variable, or CLI flag sets it above 0; no database write path
+  (`src/discovery/store.ts`) can be reached by a guessed domain that this experiment itself didn't
+  already reject, since a guess is only ever fed back through the SAME `resolveEntityDomain`/
+  `entity.domain` path an ordinarily-resolved domain uses — there is no separate write path for
+  guessed domains to bypass. **No guessed domain can currently reach persistence during normal
+  discovery, scheduled or manual.**
+
+  **Future enablement requirement (not yet met):** accumulate multiple real shadow-run ACCEPTED
+  mappings (today: essentially none under the current, hardened rules), manually inspect every one,
+  and demonstrate zero false accepted domains across a meaningful sample — only then would raising
+  `domainGuessBudget` above 0 be considered, and only with explicit approval at that time. Per this
+  codebase's own standing principle, a wrong domain is worse than an unresolved company.
 - **Directory 25-slot cap under a larger pool** cost Sunzu its finalist slot (found correctly, under an
   *alt* domain `sunzu.ai` vs. the label's `sunzu.com`, but ranked below the cap).
 - **Gaia Dynamics** is found, clustered, and ranked, but just outside the news top-14 (rank 18) — not a

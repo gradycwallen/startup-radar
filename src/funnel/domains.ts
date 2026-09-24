@@ -62,3 +62,21 @@ export function resolveEntityDomain(entity: Pick<Entity, "leads" | "name">): Dom
   const best = candidates[0];
   return best ? { domain: best.domain, trust: best.via, score: best.score, candidates } : { domain: null, trust: null, score: 0, candidates: [] };
 }
+
+/**
+ * ONE deterministic, network-free domain guess for an entity `resolveEntityDomain` found nothing
+ * for at all — `{name}.com`, the single most common startup TLD. This function NEVER decides a
+ * domain by itself: see funnel.ts's own "6b" step and domain-verify.ts's `verifyDomainIdentity` —
+ * a guess is only ever accepted after BOTH a real homepage check AND independent identity evidence
+ * (an investor name, a funding amount, a distinctive phrase — never the bare company name alone)
+ * confirm it. A first, narrower version of this function (name + reachable + name-on-page only)
+ * was built, live-tested, and reverted — see root CLAUDE.md's research note for why: it verified
+ * `ande.com`/`travix.com` as correct despite each belonging to a real, unrelated, already-
+ * established company sharing that name. This EXPERIMENTAL redesign (2026-09-23) exists
+ * specifically to fix that; it remains gated behind `domainGuessBudget` (default 0/off — see
+ * DEFAULT_FUNNEL_CONFIG) until manually audited and approved.
+ */
+export function candidateDomainGuess(name: string): string | null {
+  const key = nameKey(name);
+  return key.length >= 3 ? `${key}.com` : null;
+}

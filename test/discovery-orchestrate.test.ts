@@ -48,7 +48,7 @@ function fakeFunnelResult(finalists: ReturnType<typeof makeRankedEntity>[], dire
   return {
     as_of: "2026-09-22T00:00:00.000Z", window_days: 3, elapsed_ms: 0, providers: [], counts: {} as FunnelResult["counts"],
     item_drop_reasons: {}, prefilter_reasons: {}, merges: [], existing: [], ranked: [...finalists, ...directoryFinalists],
-    finalists, directory_finalists: directoryFinalists, prefiltered: [], leads: [],
+    finalists, directory_finalists: directoryFinalists, prefiltered: [], leads: [], domain_guess_audit: [],
   };
 }
 
