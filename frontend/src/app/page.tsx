@@ -16,10 +16,11 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
   const categoryCount = distinctCategories(companies).length;
 
   return (
-    // Narrower than Explore's max-w-6xl on purpose: the Radar is a chronological feed, not a
-    // browse grid, and single-column cards stretched to 1152px left a lot of empty space between
-    // each card's text and its right-aligned badges on a real desktop monitor.
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
+    // Wide enough to use a real desktop monitor (a narrower max-w-3xl read as a tiny column
+    // stranded in a sea of margin on a large screen — found in review); the feed row itself
+    // (company-card.tsx) spreads its own content across this width via justify-between rather
+    // than leaving it centered in a too-narrow tube.
+    <main className="mx-auto max-w-7xl px-6 py-10 sm:px-8 sm:py-16">
       <div className="max-w-2xl">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">The Radar</p>
         <h1 className="mt-3 font-serif text-[2.75rem] leading-[1.03] tracking-tight text-ink sm:text-6xl">
@@ -33,8 +34,9 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
 
       {/* A spec-sheet stat strip, not another card — big tabular numerals carry the "this is a
           real, live dataset" signal that a paragraph alone can't. Every number here is a direct
-          count over the same `companies` this page renders, never a separately-computed figure. */}
-      <dl className="mt-10 flex flex-wrap gap-x-10 gap-y-5 border-y border-line py-6">
+          count over the same `companies` this page renders, never a separately-computed figure.
+          One rule (top only), not a boxed pair — see the line-density note below. */}
+      <dl className="mt-14 flex flex-wrap gap-x-12 gap-y-5 border-t border-line pt-7">
         <div>
           <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-faint">Companies tracked</dt>
           <dd className="tabular mt-1 font-serif text-4xl text-ink sm:text-5xl">{companies.length}</dd>
@@ -52,12 +54,13 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
       <DataSourceBanner source={source} />
 
       {/* Compact bar, no boxed panel — the Radar is meant to feel like a fast-moving feed, not
-          the deep-filter tool Explore is. Full filtering lives on /explore. */}
-      <div className="mt-10">
+          the deep-filter tool Explore is. Full filtering lives on /explore. Generous margin
+          instead of another rule here — see the line-density note above. */}
+      <div className="mt-14">
         <CompanyFilterBar initial={filters} categories={distinctCategories(companies)} eventTypes={distinctEventTypes(companies)} variant="compact" searchPlaceholder="Search the radar by name, domain or category…" />
       </div>
 
-      <div className="mb-2 mt-6 flex items-baseline justify-between">
+      <div className="mb-2 mt-8 flex items-baseline justify-between">
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-faint">
           {filtered.length} {filtered.length === 1 ? "company" : "companies"}
         </p>

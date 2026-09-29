@@ -35,7 +35,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
   const intelligence = await getSignalIntelligenceForCompany(company.id);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
+    <main className="mx-auto max-w-6xl px-6 py-10 sm:px-8 sm:py-16">
       <Link href="/" className="text-sm font-medium text-ink-faint hover:text-ink">
         ← Radar
       </Link>

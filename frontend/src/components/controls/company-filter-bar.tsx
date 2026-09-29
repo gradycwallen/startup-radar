@@ -109,7 +109,11 @@ export function CompanyFilterBar({ initial, categories, eventTypes, variant = "f
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-4 border-b border-line pb-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+      {/* The search input already carries its own underline — a row-level border directly under
+          it as well read as two redundant hairlines stacked a few pixels apart (found in review).
+          Only add the row rule when there's a second row (full variant) it actually needs to
+          separate from; the compact variant relies on margin alone. */}
+      <div className={clsx("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6", variant === "full" && "border-b border-line pb-4")}>
         <div className="relative w-full sm:max-w-md">
           <svg aria-hidden viewBox="0 0 20 20" fill="none" className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint">
             <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.5" />
