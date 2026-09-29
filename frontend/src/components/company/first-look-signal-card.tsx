@@ -13,11 +13,7 @@ export function FirstLookSignalCard({ vm }: { vm: SignalViewModel }) {
   return (
     <SignalCardShell
       vm={vm}
-      tag={
-        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-ink-faint ring-1 ring-inset ring-line">
-          First observed
-        </span>
-      }
+      tag={<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">First observed</span>}
     />
   );
 }

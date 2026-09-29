@@ -15,7 +15,7 @@ export default async function ExplorePage({ searchParams }: PageProps<"/explore"
   const filtered = filterCompanies(companies, filters);
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
       <div className="mb-8">
         <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent">Explore</p>
         <h1 className="mt-1.5 font-serif text-3xl text-ink">Browse the company universe</h1>

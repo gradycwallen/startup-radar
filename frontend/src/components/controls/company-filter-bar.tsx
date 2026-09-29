@@ -73,8 +73,8 @@ export function CompanyFilterBar({ initial, categories, eventTypes, variant = "f
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2.5">
-        <div className="relative min-w-[220px] flex-1">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:min-w-[220px] sm:flex-1">
           <svg aria-hidden viewBox="0 0 20 20" fill="none" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint">
             <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.5" />
             <path d="M14 14L17.5 17.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -92,7 +92,7 @@ export function CompanyFilterBar({ initial, categories, eventTypes, variant = "f
           value={initial.sort}
           onChange={(e) => pushParams({ sort: e.target.value as SortKey })}
           aria-label="Sort"
-          className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/20"
+          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/20 sm:w-auto"
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -103,60 +103,64 @@ export function CompanyFilterBar({ initial, categories, eventTypes, variant = "f
       </div>
 
       {variant === "full" && (
-        <div className="flex flex-wrap items-center gap-2.5">
-          <select
-            value={initial.category ?? ""}
-            onChange={(e) => pushParams({ category: e.target.value || null })}
-            aria-label="Category"
-            className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted focus:border-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/20"
-          >
-            <option value="">All categories</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          {/* One bordered toolbar with internal dividers on larger screens; on mobile the same
+              control stacks into full-width rows instead of cramming four selects into one line. */}
+          <div className="flex flex-col divide-y divide-line overflow-hidden rounded-md border border-line bg-surface sm:flex-row sm:flex-wrap sm:items-stretch sm:divide-x sm:divide-y-0">
+            <select
+              value={initial.category ?? ""}
+              onChange={(e) => pushParams({ category: e.target.value || null })}
+              aria-label="Category"
+              className="w-full bg-transparent px-3 py-1.5 text-sm text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 sm:w-auto"
+            >
+              <option value="">All categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={initial.eventType ?? ""}
-            onChange={(e) => pushParams({ eventType: e.target.value || null })}
-            aria-label="Signal type"
-            className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted focus:border-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/20"
-          >
-            <option value="">All signal types</option>
-            {eventTypes.map((e) => (
-              <option key={e} value={e}>
-                {eventTypeMeta(e).label}
-              </option>
-            ))}
-          </select>
+            <select
+              value={initial.eventType ?? ""}
+              onChange={(e) => pushParams({ eventType: e.target.value || null })}
+              aria-label="Signal type"
+              className="w-full bg-transparent px-3 py-1.5 text-sm text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 sm:w-auto"
+            >
+              <option value="">All signal types</option>
+              {eventTypes.map((e) => (
+                <option key={e} value={e}>
+                  {eventTypeMeta(e).label}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={initial.minConfidence ?? ""}
-            onChange={(e) => pushParams({ minConfidence: e.target.value ? Number(e.target.value) : null })}
-            aria-label="Minimum confidence"
-            className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted focus:border-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/20"
-          >
-            {CONFIDENCE_STEPS.map((s) => (
-              <option key={s.label} value={s.value ?? ""}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+            <select
+              value={initial.minConfidence ?? ""}
+              onChange={(e) => pushParams({ minConfidence: e.target.value ? Number(e.target.value) : null })}
+              aria-label="Minimum confidence"
+              className="w-full bg-transparent px-3 py-1.5 text-sm text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 sm:w-auto"
+            >
+              {CONFIDENCE_STEPS.map((s) => (
+                <option key={s.label} value={s.value ?? ""}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={initial.maxAgeDays ?? ""}
-            onChange={(e) => pushParams({ maxAgeDays: e.target.value ? Number(e.target.value) : null })}
-            aria-label="Discovery window"
-            className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted focus:border-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/20"
-          >
-            {RECENCY_STEPS.map((s) => (
-              <option key={s.label} value={s.value ?? ""}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+            <select
+              value={initial.maxAgeDays ?? ""}
+              onChange={(e) => pushParams({ maxAgeDays: e.target.value ? Number(e.target.value) : null })}
+              aria-label="Discovery window"
+              className="w-full bg-transparent px-3 py-1.5 text-sm text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 sm:w-auto"
+            >
+              {RECENCY_STEPS.map((s) => (
+                <option key={s.label} value={s.value ?? ""}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {hasActiveFilters && (
             <button

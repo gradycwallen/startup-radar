@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { CompanyWithEvents } from "@/lib/data/types";
 import { ConfidenceBadge } from "@/components/company/confidence-badge";
 import { SignalBadge } from "@/components/company/signal-badge";
-import { categoryClasses } from "@/lib/derive/category-color";
+import { categoryLabelClasses } from "@/lib/derive/category-color";
 import { recencyLabel } from "@/lib/derive/recency";
 import { MomentumMeta } from "@/components/company/momentum-meta";
 
@@ -16,7 +16,7 @@ export function CompanyCard({ company }: { company: CompanyWithEvents }) {
   return (
     <Link
       href={`/companies/${company.id}`}
-      className="group block rounded-lg border border-line bg-surface px-5 py-4 transition-all hover:border-line-strong hover:shadow-[0_1px_0_0_rgba(0,0,0,0.02),0_8px_24px_-16px_rgba(0,0,0,0.25)] dark:hover:shadow-[0_1px_0_0_rgba(0,0,0,0.2),0_8px_24px_-16px_rgba(0,0,0,0.6)]"
+      className="group block rounded-lg border border-line bg-surface px-5 py-4 transition-colors hover:border-accent/40"
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
@@ -40,7 +40,7 @@ export function CompanyCard({ company }: { company: CompanyWithEvents }) {
       ) : null}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {company.category ? <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${categoryClasses(company.category)}`}>{company.category}</span> : null}
+        {company.category ? <span className={categoryLabelClasses()}>{company.category}</span> : null}
         {event ? <SignalBadge eventType={event.eventType} short /> : null}
         {company.discoverySource ? <span className="text-xs text-ink-faint">via {company.discoverySource}</span> : null}
       </div>

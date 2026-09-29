@@ -12,7 +12,7 @@ const LINKS = [
 export function NavLinks() {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-1">
+    <nav className="flex items-center gap-5">
       {LINKS.map((link) => {
         const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
         return (
@@ -20,8 +20,8 @@ export function NavLinks() {
             key={link.href}
             href={link.href}
             className={clsx(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              active ? "bg-ink text-canvas" : "text-ink-muted hover:bg-line/60 hover:text-ink",
+              "border-b-2 py-1.5 text-sm font-medium transition-colors",
+              active ? "border-ink text-ink" : "border-transparent text-ink-muted hover:text-ink",
             )}
           >
             {link.label}

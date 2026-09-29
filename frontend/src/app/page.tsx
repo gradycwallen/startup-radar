@@ -12,7 +12,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
   const filtered = filterCompanies(companies, filters);
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
       <div className="mb-8">
         <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent">The Radar</p>
         <h1 className="mt-1.5 font-serif text-3xl text-ink">Recently discovered startups</h1>
@@ -24,8 +24,10 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
 
       <DataSourceBanner source={source} />
 
-      <div className="mb-6 rounded-lg border border-line bg-surface/60 p-4">
-        <CompanyFilterBar initial={filters} categories={distinctCategories(companies)} eventTypes={distinctEventTypes(companies)} variant="full" searchPlaceholder="Search the radar by name, domain or category…" />
+      {/* Compact bar, no boxed panel — the Radar is meant to feel like a fast-moving feed, not
+          the deep-filter tool Explore is. Full filtering lives on /explore. */}
+      <div className="mb-6">
+        <CompanyFilterBar initial={filters} categories={distinctCategories(companies)} eventTypes={distinctEventTypes(companies)} variant="compact" searchPlaceholder="Search the radar by name, domain or category…" />
       </div>
 
       <div className="mb-4 flex items-baseline justify-between">

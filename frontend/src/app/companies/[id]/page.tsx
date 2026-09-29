@@ -7,7 +7,7 @@ import { ConfidenceBadge } from "@/components/company/confidence-badge";
 import { EvidenceTimeline } from "@/components/company/evidence-timeline";
 import { SignalIntelligenceSection } from "@/components/company/signal-intelligence-section";
 import { DataSourceBanner } from "@/components/ui/data-source-banner";
-import { categoryClasses } from "@/lib/derive/category-color";
+import { categoryLabelClasses } from "@/lib/derive/category-color";
 import { formatDate, recencyLabel } from "@/lib/derive/recency";
 
 function parseId(raw: string): number | null {
@@ -34,7 +34,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
   const intelligence = await getSignalIntelligenceForCompany(company.id);
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
+    <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
       <Link href="/" className="text-sm font-medium text-ink-faint hover:text-ink">
         ← Radar
       </Link>
@@ -45,7 +45,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-serif text-3xl text-ink">{company.name}</h1>
-            {company.category ? <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${categoryClasses(company.category)}`}>{company.category}</span> : null}
+            {company.category ? <span className={categoryLabelClasses()}>{company.category}</span> : null}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-muted">
             <a href={`https://${company.domain}`} target="_blank" rel="noreferrer noopener" className="font-medium text-accent hover:underline">
