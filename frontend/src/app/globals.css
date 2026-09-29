@@ -70,3 +70,54 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* Radar homepage intro (components/intro/radar-intro.tsx) — ambient looping animations only;
+ * the actual scroll-driven reveal is plain scroll position + inline styles, not CSS/JS keyframes,
+ * so it stays perfectly reversible without anything here. */
+@keyframes radar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.radar-sweep {
+  background: conic-gradient(from 0deg, transparent 0deg, var(--color-accent) 14deg, transparent 55deg);
+  animation: radar-spin 6s linear infinite;
+}
+
+@keyframes radar-blip {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+.radar-blip {
+  animation: radar-blip 3.2s ease-in-out infinite;
+}
+
+@keyframes scroll-cue-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+.scroll-cue {
+  animation: scroll-cue-bounce 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radar-sweep,
+  .radar-blip,
+  .scroll-cue {
+    animation: none;
+  }
+}
