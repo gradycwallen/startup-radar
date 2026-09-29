@@ -114,10 +114,31 @@ body {
   animation: scroll-cue-bounce 2s ease-in-out infinite;
 }
 
+/* The "Detected — {company}" readout: a fresh element is mounted per cycle (`key={domain}` in
+ * radar-intro.tsx), which restarts this animation — not a JS-driven opacity loop. */
+@keyframes hud-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  12%,
+  85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.hud-fade {
+  animation: hud-fade 2.2s ease-in-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .radar-sweep,
   .radar-blip,
-  .scroll-cue {
+  .scroll-cue,
+  .hud-fade {
     animation: none;
   }
 }
