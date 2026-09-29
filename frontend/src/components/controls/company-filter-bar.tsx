@@ -36,6 +36,42 @@ export interface CompanyFilterBarProps {
   searchPlaceholder?: string;
 }
 
+/** A native `<select>` styled as plain text with its own chevron — no box, no bg, no OS-default
+ * arrow glyph breaking the otherwise bespoke type-driven UI (see the design audit this replaced).
+ * Still a real `<select>` throughout: full keyboard/native-picker accessibility for free. */
+function SelectField({
+  value,
+  onChange,
+  ariaLabel,
+  emphasized = false,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  ariaLabel: string;
+  emphasized?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="relative inline-flex items-center">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={ariaLabel}
+        className={clsx(
+          "cursor-pointer appearance-none bg-transparent py-1 pr-5 text-left focus:outline-none",
+          emphasized ? "font-medium text-ink" : "text-ink-muted hover:text-ink",
+        )}
+      >
+        {children}
+      </select>
+      <svg aria-hidden viewBox="0 0 10 6" className="pointer-events-none absolute right-0 h-1.5 w-2.5 text-ink-faint">
+        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </svg>
+    </span>
+  );
+}
+
 export function CompanyFilterBar({ initial, categories, eventTypes, variant = "full", searchPlaceholder = "Search companies…" }: CompanyFilterBarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -72,10 +108,10 @@ export function CompanyFilterBar({ initial, categories, eventTypes, variant = "f
   const hasActiveFilters = Boolean(initial.category || initial.eventType || initial.minConfidence || initial.maxAgeDays || initial.q);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-        <div className="relative w-full sm:min-w-[220px] sm:flex-1">
-          <svg aria-hidden viewBox="0 0 20 20" fill="none" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 border-b border-line pb-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="relative w-full sm:max-w-md">
+          <svg aria-hidden viewBox="0 0 20 20" fill="none" className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint">
             <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.5" />
             <path d="M14 14L17.5 17.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
@@ -84,83 +120,62 @@ export function CompanyFilterBar({ initial, categories, eventTypes, variant = "f
             onChange={(e) => setQ(e.target.value)}
             placeholder={searchPlaceholder}
             aria-label="Search companies"
-            className="w-full rounded-md border border-line bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink-faint focus:border-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/20"
+            className="w-full border-b border-line bg-transparent py-2 pl-6 text-[15px] text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none"
           />
         </div>
 
-        <select
-          value={initial.sort}
-          onChange={(e) => pushParams({ sort: e.target.value as SortKey })}
-          aria-label="Sort"
-          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/20 sm:w-auto"
-        >
+        <SelectField value={initial.sort} onChange={(v) => pushParams({ sort: v as SortKey })} ariaLabel="Sort" emphasized>
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>
               Sort: {s.label}
             </option>
           ))}
-        </select>
+        </SelectField>
       </div>
 
       {variant === "full" && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          {/* One bordered toolbar with internal dividers on larger screens; on mobile the same
-              control stacks into full-width rows instead of cramming four selects into one line. */}
-          <div className="flex flex-col divide-y divide-line overflow-hidden rounded-md border border-line bg-surface sm:flex-row sm:flex-wrap sm:items-stretch sm:divide-x sm:divide-y-0">
-            <select
-              value={initial.category ?? ""}
-              onChange={(e) => pushParams({ category: e.target.value || null })}
-              aria-label="Category"
-              className="w-full bg-transparent px-3 py-1.5 text-sm text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 sm:w-auto"
-            >
-              <option value="">All categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+        <div className="flex flex-wrap items-center gap-x-7 gap-y-3 text-sm">
+          <SelectField value={initial.category ?? ""} onChange={(v) => pushParams({ category: v || null })} ariaLabel="Category">
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </SelectField>
 
-            <select
-              value={initial.eventType ?? ""}
-              onChange={(e) => pushParams({ eventType: e.target.value || null })}
-              aria-label="Signal type"
-              className="w-full bg-transparent px-3 py-1.5 text-sm text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 sm:w-auto"
-            >
-              <option value="">All signal types</option>
-              {eventTypes.map((e) => (
-                <option key={e} value={e}>
-                  {eventTypeMeta(e).label}
-                </option>
-              ))}
-            </select>
+          <SelectField value={initial.eventType ?? ""} onChange={(v) => pushParams({ eventType: v || null })} ariaLabel="Signal type">
+            <option value="">All signal types</option>
+            {eventTypes.map((e) => (
+              <option key={e} value={e}>
+                {eventTypeMeta(e).label}
+              </option>
+            ))}
+          </SelectField>
 
-            <select
-              value={initial.minConfidence ?? ""}
-              onChange={(e) => pushParams({ minConfidence: e.target.value ? Number(e.target.value) : null })}
-              aria-label="Minimum confidence"
-              className="w-full bg-transparent px-3 py-1.5 text-sm text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 sm:w-auto"
-            >
-              {CONFIDENCE_STEPS.map((s) => (
-                <option key={s.label} value={s.value ?? ""}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+          <SelectField
+            value={initial.minConfidence !== null ? String(initial.minConfidence) : ""}
+            onChange={(v) => pushParams({ minConfidence: v ? Number(v) : null })}
+            ariaLabel="Minimum confidence"
+          >
+            {CONFIDENCE_STEPS.map((s) => (
+              <option key={s.label} value={s.value ?? ""}>
+                {s.label}
+              </option>
+            ))}
+          </SelectField>
 
-            <select
-              value={initial.maxAgeDays ?? ""}
-              onChange={(e) => pushParams({ maxAgeDays: e.target.value ? Number(e.target.value) : null })}
-              aria-label="Discovery window"
-              className="w-full bg-transparent px-3 py-1.5 text-sm text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 sm:w-auto"
-            >
-              {RECENCY_STEPS.map((s) => (
-                <option key={s.label} value={s.value ?? ""}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelectField
+            value={initial.maxAgeDays !== null ? String(initial.maxAgeDays) : ""}
+            onChange={(v) => pushParams({ maxAgeDays: v ? Number(v) : null })}
+            ariaLabel="Discovery window"
+          >
+            {RECENCY_STEPS.map((s) => (
+              <option key={s.label} value={s.value ?? ""}>
+                {s.label}
+              </option>
+            ))}
+          </SelectField>
 
           {hasActiveFilters && (
             <button
@@ -169,7 +184,7 @@ export function CompanyFilterBar({ initial, categories, eventTypes, variant = "f
                 setQ("");
                 router.push(pathname, { scroll: false });
               }}
-              className={clsx("text-sm font-medium text-accent hover:underline")}
+              className="text-sm font-medium text-accent hover:underline"
             >
               Clear filters
             </button>

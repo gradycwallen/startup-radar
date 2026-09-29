@@ -6,11 +6,13 @@ import { recencyLabel } from "@/lib/derive/recency";
 import { MomentumMeta } from "@/components/company/momentum-meta";
 import { CompanyLogo } from "@/components/ui/company-logo";
 
+// No border/shadow at rest — a card-less grid cell (whitespace does the separating, not a boxed
+// outline) that only reveals a soft fill on hover, matching the Radar feed row's treatment.
 export function ExploreCard({ company }: { company: CompanyWithEvents }) {
   return (
     <Link
       href={`/companies/${company.id}`}
-      className="group flex h-full flex-col rounded-lg border border-line bg-surface p-4 transition-colors hover:border-accent/40"
+      className="group flex h-full flex-col rounded-lg p-4 transition-colors hover:bg-line/25"
     >
       <div className="flex items-start gap-2.5">
         <CompanyLogo domain={company.domain} name={company.name} size={28} />

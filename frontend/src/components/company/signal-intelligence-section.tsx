@@ -19,8 +19,8 @@ import { TransitionSignalCard } from "./transition-signal-card";
 export function SignalIntelligenceSection({ intelligence }: { intelligence: SignalIntelligence }) {
   if (intelligence.sources.length === 0) {
     return (
-      <section className="mt-10 max-w-3xl">
-        <h2 className="font-serif text-xl text-ink">Signal Intelligence</h2>
+      <section className="mt-14 max-w-3xl">
+        <h2 className="font-serif text-2xl text-ink">Signal Intelligence</h2>
         <p className="mt-1.5 text-sm text-ink-muted">{SIGNAL_EMPTY_STATE_COPY.noSources}</p>
       </section>
     );
@@ -30,15 +30,15 @@ export function SignalIntelligenceSection({ intelligence }: { intelligence: Sign
   const coverageText = buildCoverageLine(intelligence);
 
   return (
-    <section className="mt-10 max-w-3xl">
-      <h2 className="font-serif text-xl text-ink">Signal Intelligence</h2>
-      <p className="mt-1 text-sm text-ink-muted">Deterministic signals Startup Radar has derived from hiring, GitHub and website activity — never inferred, never scored.</p>
+    <section className="mt-14 max-w-3xl">
+      <h2 className="font-serif text-2xl text-ink">Signal Intelligence</h2>
+      <p className="mt-1.5 text-sm text-ink-muted">Deterministic signals Startup Radar has derived from hiring, GitHub and website activity — never inferred, never scored.</p>
       <CoverageLine text={coverageText} />
 
       {viewModels.length === 0 ? (
         <p className="mt-5 text-sm text-ink-muted">{SIGNAL_EMPTY_STATE_COPY.noSignalsYet}</p>
       ) : (
-        <div className="mt-5">
+        <div className="mt-6">
           <SignalCardList viewModels={viewModels} />
         </div>
       )}
@@ -59,7 +59,7 @@ function SignalCardList({ viewModels }: { viewModels: SignalViewModel[] }) {
   const families = [...new Set(viewModels.map((v) => v.family))];
   if (families.length <= 1) {
     return (
-      <div className="space-y-3">
+      <div className="divide-y divide-line">
         {viewModels.map((vm) => (
           <SignalCard key={vm.id} vm={vm} />
         ))}
@@ -68,13 +68,13 @@ function SignalCardList({ viewModels }: { viewModels: SignalViewModel[] }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {families.map((family) => {
         const group = viewModels.filter((v) => v.family === family);
         return (
           <div key={family}>
             <h3 className="text-xs font-medium uppercase tracking-[0.1em] text-ink-faint">{group[0]!.familyLabel}</h3>
-            <div className="mt-2.5 space-y-3">
+            <div className="mt-2 divide-y divide-line">
               {group.map((vm) => (
                 <SignalCard key={vm.id} vm={vm} />
               ))}

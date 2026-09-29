@@ -35,22 +35,22 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
   const intelligence = await getSignalIntelligenceForCompany(company.id);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
+    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-16">
       <Link href="/" className="text-sm font-medium text-ink-faint hover:text-ink">
         ← Radar
       </Link>
 
       <DataSourceBanner source={source} />
 
-      <header className="mt-4 flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
-        <div className="flex gap-4">
-          <CompanyLogo domain={company.domain} name={company.name} size={48} />
+      <header className="mt-6 flex flex-wrap items-start justify-between gap-4 border-b border-line pb-8">
+        <div className="flex gap-5">
+          <CompanyLogo domain={company.domain} name={company.name} size={56} />
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-serif text-3xl text-ink">{company.name}</h1>
+              <h1 className="font-serif text-4xl tracking-tight text-ink sm:text-5xl">{company.name}</h1>
               {company.category ? <span className={categoryLabelClasses()}>{company.category}</span> : null}
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-muted">
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-muted">
               <a href={`https://${company.domain}`} target="_blank" rel="noreferrer noopener" className="font-medium text-accent hover:underline">
                 {company.domain}
               </a>
@@ -62,14 +62,14 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
         <ConfidenceBadge confidence={company.confidence} />
       </header>
 
-      {company.description ? <p className="mt-6 max-w-3xl text-base leading-relaxed text-ink-muted">{company.description}</p> : null}
+      {company.description ? <p className="mt-8 max-w-2xl text-lg leading-relaxed text-ink-muted">{company.description}</p> : null}
 
       {company.discoveryReason ? (
-        <div className="mt-6 rounded-lg border border-accent/25 bg-accent-soft/60 px-5 py-4">
-          <p className="text-xs font-medium uppercase tracking-[0.1em] text-accent">Why it&rsquo;s on the radar</p>
-          <p className="mt-1.5 text-sm text-ink">{company.discoveryReason}</p>
+        <div className="mt-8 max-w-2xl border-l-2 border-accent/50 pl-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-accent">Why it&rsquo;s on the radar</p>
+          <p className="mt-2 font-serif text-xl leading-snug text-ink">{company.discoveryReason}</p>
           {company.discoverySource ? (
-            <p className="mt-2 text-xs text-ink-muted">
+            <p className="mt-2.5 text-xs text-ink-muted">
               Original discovery source: {company.discoveryUrl ? (
                 <a href={company.discoveryUrl} target="_blank" rel="noreferrer noopener" className="font-medium text-accent hover:underline">
                   {company.discoverySource}
@@ -86,10 +86,10 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
 
       <SignalIntelligenceSection intelligence={intelligence} />
 
-      <section className="mt-10 max-w-3xl">
-        <h2 className="font-serif text-xl text-ink">Discovery timeline</h2>
-        <p className="mt-1 text-sm text-ink-muted">Every event Startup Radar has recorded for {company.name}, most recent first.</p>
-        <div className="mt-5">
+      <section className="mt-14 max-w-3xl">
+        <h2 className="font-serif text-2xl text-ink">Discovery timeline</h2>
+        <p className="mt-1.5 text-sm text-ink-muted">Every event Startup Radar has recorded for {company.name}, most recent first.</p>
+        <div className="mt-6">
           <EvidenceTimeline events={company.events} />
         </div>
       </section>

@@ -15,11 +15,11 @@ export default async function ExplorePage({ searchParams }: PageProps<"/explore"
   const filtered = filterCompanies(companies, filters);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
-      <div className="mb-8">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent">Explore</p>
-        <h1 className="mt-1.5 font-serif text-3xl text-ink">Browse the company universe</h1>
-        <p className="mt-2 max-w-2xl text-sm text-ink-muted">
+    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
+      <div className="max-w-2xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Explore</p>
+        <h1 className="mt-3 font-serif text-4xl leading-[1.05] tracking-tight text-ink sm:text-5xl">Browse the company universe</h1>
+        <p className="mt-5 text-base leading-relaxed text-ink-muted">
           Search and filter every company Startup Radar has discovered — useful when you already know roughly what you&rsquo;re
           looking for, or want to browse by category, signal type or confidence.
         </p>
@@ -27,12 +27,12 @@ export default async function ExplorePage({ searchParams }: PageProps<"/explore"
 
       <DataSourceBanner source={source} />
 
-      <div className="mb-6 rounded-lg border border-line bg-surface/60 p-4">
+      <div className="mt-10">
         <CompanyFilterBar initial={filters} categories={distinctCategories(companies)} eventTypes={distinctEventTypes(companies)} variant="full" searchPlaceholder="Search by name, domain, category or description…" />
       </div>
 
-      <div className="mb-4 flex items-baseline justify-between">
-        <p className="text-sm text-ink-faint">
+      <div className="mb-6 mt-6 flex items-baseline justify-between">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-faint">
           {filtered.length} of {companies.length} {companies.length === 1 ? "company" : "companies"}
         </p>
       </div>
@@ -40,7 +40,7 @@ export default async function ExplorePage({ searchParams }: PageProps<"/explore"
       {filtered.length === 0 ? (
         <EmptyState title="Nothing matches these filters" description="Try a broader search term, or clear a filter to widen the results." />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((company) => (
             <ExploreCard key={company.id} company={company} />
           ))}

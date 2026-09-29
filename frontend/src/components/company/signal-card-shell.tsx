@@ -13,13 +13,15 @@ import { SignalEvidence } from "./signal-evidence";
  * duplicated markup.
  *
  * Tier (design report §13/§9): a subtle LEFT BORDER weight/color difference only — no label, no
- * stars, no number. `null`/`"low"` tier both render the plain card border; only `"high"` gets the
- * slightly stronger amber-tinted edge. This deliberately reuses the exact visual language the
- * "why it's on the radar" callout already established (border-accent/40) elsewhere on this page.
+ * stars, no number. `null`/`"low"` tier both render a transparent rule (same 2px gutter, so
+ * nothing shifts); only `"high"` gets the amber-tinted edge. This deliberately reuses the exact
+ * visual language the "why it's on the radar" callout already established (border-accent/50)
+ * elsewhere on this page. No box around the card itself — rows are separated by the parent's
+ * `divide-y` hairline (signal-intelligence-section.tsx), not a bordered/rounded container.
  */
 export function SignalCardShell({ vm, tag, afterExplanation }: { vm: SignalViewModel; tag?: ReactNode; afterExplanation?: ReactNode }) {
   return (
-    <div className={clsx("rounded-lg border-y border-r border-line bg-surface py-4 pr-4", vm.tier === "high" ? "border-l-2 border-l-accent/45 pl-[15px]" : "border-l border-l-line pl-4")}>
+    <div className={clsx("py-5 pl-4 border-l-2", vm.tier === "high" ? "border-l-accent/50" : "border-l-transparent")}>
       <div className="flex flex-wrap items-center gap-2">
         <FamilyBadge label={vm.familyLabel} />
         <span className="text-xs text-ink-faint">{formatDate(vm.firedAt)}</span>
