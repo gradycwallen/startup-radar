@@ -134,11 +134,48 @@ body {
   animation: hud-fade 2.2s ease-in-out;
 }
 
+/* Full-bleed intro background texture (radar-intro.tsx: HudField) — gives the wide margins either
+ * side of the centered content on a real monitor an instrument-panel texture instead of reading as
+ * empty canvas. Dot grid is static; only the sweep band moves, slowly. */
+.hud-grid {
+  background-image: radial-gradient(circle, var(--color-line-strong) 1.4px, transparent 1.4px);
+  background-size: 28px 28px;
+}
+
+@keyframes hud-sweep-move {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(220%);
+  }
+}
+.hud-sweep {
+  background: linear-gradient(90deg, transparent 0%, var(--color-accent) 50%, transparent 100%);
+  opacity: 0.05;
+  animation: hud-sweep-move 14s linear infinite;
+}
+
+@keyframes hud-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+.hud-pulse {
+  animation: hud-pulse 1.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .radar-sweep,
   .radar-blip,
   .scroll-cue,
-  .hud-fade {
+  .hud-fade,
+  .hud-sweep,
+  .hud-pulse {
     animation: none;
   }
 }

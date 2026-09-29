@@ -16,6 +16,8 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
 
   const newThisWeek = companies.filter((c) => daysSince(c.discoveredAt) <= 7).length;
   const categoryCount = distinctCategories(companies).length;
+  const signalTypeCount = distinctEventTypes(companies).length;
+  const sourceCount = new Set(companies.map((c) => c.discoverySource).filter((s): s is string => Boolean(s))).size;
 
   // The intro's "detections" are the same top-momentum companies Momentum would rank first on
   // the real feed below (compareMomentumDesc, unchanged) — never a separately-invented list —
@@ -29,7 +31,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
     <>
       {/* Scroll-revealed cover, only on the homepage — see radar-intro.tsx for the mechanics.
           Deliberately outside <main>: it's a threshold you scroll through, not page content. */}
-      <RadarIntro topSignals={topSignals} totalCount={companies.length} />
+      <RadarIntro topSignals={topSignals} totalCount={companies.length} sourceCount={sourceCount} signalTypeCount={signalTypeCount} />
 
       {/* Wide enough to use a real desktop monitor (a narrower max-w-3xl read as a tiny column
           stranded in a sea of margin on a large screen — found in review); the feed row itself

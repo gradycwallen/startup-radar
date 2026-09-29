@@ -20,6 +20,13 @@ const BLIP_SLOTS = [
   { top: 58, left: 14 },
 ] as const;
 
+interface RadarIntroProps {
+  topSignals: IntroSignal[];
+  totalCount: number;
+  sourceCount: number;
+  signalTypeCount: number;
+}
+
 /**
  * A full-viewport cover in front of the Radar feed's real content — not a one-shot animation, and
  * not decorative-for-its-own-sake: everything it shows is real data from the same query the feed
@@ -28,13 +35,18 @@ const BLIP_SLOTS = [
  * feed, cycled through a "detected" readout; `totalCount` is the same number the real stat strip
  * shows below — scrolling past this cover into the feed shows exactly what it just claimed.
  *
+ * The corner HUD readouts and full-bleed grid/sweep texture (below) exist to use the full width of
+ * a real monitor with real content instead of a small centered medallion floating in a lot of flat
+ * margin — found in review. Every number in a corner is real (source/signal-type counts from the
+ * same dataset), not invented flavor text, matching the rest of this app's no-fabrication stance.
+ *
  * Reveal mechanics: a tall (200svh) wrapper holds a `position: sticky` panel pinned just below the
  * masthead. Scrolling fades/scales it based on live scroll position (not a one-shot animation), so
  * scrolling back up to the top always returns to it; nothing here "plays once" or needs a replay
  * control. `svh` (small viewport height), not `vh`, so a mobile browser's address bar hiding/
  * showing doesn't jitter the pinned height.
  */
-export function RadarIntro({ topSignals, totalCount }: { topSignals: IntroSignal[]; totalCount: number }) {
+export function RadarIntro({ topSignals, totalCount, sourceCount, signalTypeCount }: RadarIntroProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +87,28 @@ export function RadarIntro({ topSignals, totalCount }: { topSignals: IntroSignal
         ref={panelRef}
         className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden bg-canvas px-6 text-center sm:top-20 sm:h-[calc(100svh-5rem)]"
       >
+        <HudField />
+
+        <HudCorner className="left-5 top-5 items-start text-left sm:left-10 sm:top-8">
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden className="hud-pulse h-1.5 w-1.5 rounded-full bg-accent" />
+            Startup Radar — live
+          </span>
+        </HudCorner>
+        <HudCorner className="right-5 top-5 items-end text-right sm:right-10 sm:top-8">
+          <LiveClock />
+        </HudCorner>
+        <HudCorner className="bottom-5 left-5 items-start text-left sm:bottom-8 sm:left-10">
+          <span>
+            Sources scanned <span className="tabular text-ink">{sourceCount}</span>
+          </span>
+        </HudCorner>
+        <HudCorner className="bottom-5 right-5 items-end text-right sm:bottom-8 sm:right-10">
+          <span>
+            Signal types <span className="tabular text-ink">{signalTypeCount}</span>
+          </span>
+        </HudCorner>
+
         <RadarScope signals={topSignals} />
         <div className="relative">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">Startup Radar</p>
@@ -95,10 +129,57 @@ export function RadarIntro({ topSignals, totalCount }: { topSignals: IntroSignal
   );
 }
 
+/** Full-bleed background texture — a faint dot grid plus a slow sweeping band of light — so the
+ * wide margins either side of the centered content on a real monitor read as an instrument panel
+ * extending off-screen, not empty canvas the content happens to float in. Static aside from the
+ * one slow (14s) sweep; `prefers-reduced-motion` freezes that sweep in place via globals.css. */
+function HudField() {
+  return (
+    <div aria-hidden className="absolute inset-0 overflow-hidden">
+      <div className="hud-grid absolute inset-0" />
+      <div className="hud-sweep absolute inset-y-0 w-[45vw]" />
+    </div>
+  );
+}
+
+function HudCorner({ className, children }: { className: string; children: React.ReactNode }) {
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute z-10 flex flex-col text-[11px] font-medium uppercase tracking-[0.12em] text-ink-faint ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Genuinely real, ticking local time — not decorative flavor text — the kind of detail a real
+ * instrument readout has that a purely decorative one wouldn't bother getting right. Renders
+ * nothing until mounted (`time` starts null) so the server-rendered markup and the client's first
+ * render match exactly; the first tick is scheduled via `setTimeout(…, 0)` rather than called
+ * synchronously in the effect body, keeping every `setValue` call inside an async callback. */
+function LiveClock() {
+  const [time, setTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    function tick() {
+      setTime(new Date().toLocaleTimeString([], { hour12: false }));
+    }
+    const interval = setInterval(tick, 1000);
+    const initial = setTimeout(tick, 0);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(initial);
+    };
+  }, []);
+
+  return <span className="tabular">{time ?? "—:—:—"}</span>;
+}
+
 function RadarScope({ signals }: { signals: IntroSignal[] }) {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
-      <div className="relative h-[480px] w-[480px] sm:h-[640px] sm:w-[640px]">
+      <div className="relative h-[min(78vw,560px)] w-[min(78vw,560px)] sm:h-[min(56vw,720px)] sm:w-[min(56vw,720px)]">
         {[1, 0.72, 0.44].map((scale) => (
           <span
             key={scale}
