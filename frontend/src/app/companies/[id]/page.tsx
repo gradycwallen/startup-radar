@@ -7,6 +7,7 @@ import { ConfidenceBadge } from "@/components/company/confidence-badge";
 import { EvidenceTimeline } from "@/components/company/evidence-timeline";
 import { SignalIntelligenceSection } from "@/components/company/signal-intelligence-section";
 import { DataSourceBanner } from "@/components/ui/data-source-banner";
+import { CompanyLogo } from "@/components/ui/company-logo";
 import { categoryLabelClasses } from "@/lib/derive/category-color";
 import { formatDate, recencyLabel } from "@/lib/derive/recency";
 
@@ -42,17 +43,20 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
       <DataSourceBanner source={source} />
 
       <header className="mt-4 flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-serif text-3xl text-ink">{company.name}</h1>
-            {company.category ? <span className={categoryLabelClasses()}>{company.category}</span> : null}
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-muted">
-            <a href={`https://${company.domain}`} target="_blank" rel="noreferrer noopener" className="font-medium text-accent hover:underline">
-              {company.domain}
-            </a>
-            {company.foundedYear ? <span>Founded {company.foundedYear}</span> : null}
-            <span>Discovered {recencyLabel(company.discoveredAt)}</span>
+        <div className="flex gap-4">
+          <CompanyLogo domain={company.domain} name={company.name} size={48} />
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-serif text-3xl text-ink">{company.name}</h1>
+              {company.category ? <span className={categoryLabelClasses()}>{company.category}</span> : null}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-muted">
+              <a href={`https://${company.domain}`} target="_blank" rel="noreferrer noopener" className="font-medium text-accent hover:underline">
+                {company.domain}
+              </a>
+              {company.foundedYear ? <span>Founded {company.foundedYear}</span> : null}
+              <span>Discovered {recencyLabel(company.discoveredAt)}</span>
+            </div>
           </div>
         </div>
         <ConfidenceBadge confidence={company.confidence} />

@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  images: {
+    // Company logos (src/components/ui/company-logo.tsx) are fetched from Google's public
+    // favicon service, keyed by each company's own `domain` — no per-company asset to maintain.
+    remotePatterns: [{ protocol: "https", hostname: "t2.gstatic.com", pathname: "/faviconV2**" }],
+  },
 };
 
 export default nextConfig;

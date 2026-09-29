@@ -2,11 +2,30 @@ import type { CompanyWithEvents } from "@/lib/data/types";
 import { computeMomentum, latestMemberTimestamp, type MomentumBand } from "@/lib/derive/momentum";
 import { hourGranularRecencyLabel } from "@/lib/derive/recency";
 
-const BAND_META: Record<MomentumBand, { label: string; dot: string; text: string }> = {
-  high: { label: "High Momentum", dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300" },
-  medium: { label: "Medium Momentum", dot: "bg-sky-500", text: "text-sky-700 dark:text-sky-300" },
-  low: { label: "Low Momentum", dot: "bg-ink-faint", text: "text-ink-faint" },
+// Bars, not a color — Confidence (src/components/company/confidence-badge.tsx) already owns the
+// emerald/sky/faint dot language for evidence QUALITY. Momentum is a different axis (activity
+// LEVEL), so it gets a different shape entirely rather than reusing those hues for something else;
+// otherwise two unrelated metrics look like the same signal repeated. Filled-bar count carries the
+// level; color stays neutral ink throughout.
+const BAND_META: Record<MomentumBand, { label: string; text: string; filledBars: 1 | 2 | 3 }> = {
+  high: { label: "High Momentum", text: "text-ink", filledBars: 3 },
+  medium: { label: "Medium Momentum", text: "text-ink-muted", filledBars: 2 },
+  low: { label: "Low Momentum", text: "text-ink-faint", filledBars: 1 },
 };
+
+function MomentumBars({ filled }: { filled: 1 | 2 | 3 }) {
+  return (
+    <span aria-hidden className="flex shrink-0 items-end gap-[1.5px]">
+      {([1, 2, 3] as const).map((bar) => (
+        <span
+          key={bar}
+          className={`w-[3px] rounded-[1px] ${bar <= filled ? "bg-ink" : "bg-line-strong"}`}
+          style={{ height: 3 + bar * 2 }}
+        />
+      ))}
+    </span>
+  );
+}
 
 const TOOLTIP_TEXT =
   "Momentum reflects how recent a company’s activity is, how well it is corroborated across sources, and how many different types of signals have appeared recently.";
@@ -30,7 +49,7 @@ export function MomentumMeta({ company, now = new Date() }: { company: CompanyWi
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs">
       <span className={`inline-flex items-center gap-1.5 font-medium ${meta.text}`}>
-        <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+        <MomentumBars filled={meta.filledBars} />
         {meta.label}
       </span>
       <span className="text-ink-faint">

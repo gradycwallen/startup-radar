@@ -4,6 +4,7 @@ import { ConfidenceBadge } from "@/components/company/confidence-badge";
 import { categoryLabelClasses } from "@/lib/derive/category-color";
 import { recencyLabel } from "@/lib/derive/recency";
 import { MomentumMeta } from "@/components/company/momentum-meta";
+import { CompanyLogo } from "@/components/ui/company-logo";
 
 export function ExploreCard({ company }: { company: CompanyWithEvents }) {
   return (
@@ -11,11 +12,16 @@ export function ExploreCard({ company }: { company: CompanyWithEvents }) {
       href={`/companies/${company.id}`}
       className="group flex h-full flex-col rounded-lg border border-line bg-surface p-4 transition-colors hover:border-accent/40"
     >
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-serif text-base text-ink group-hover:text-accent">{company.name}</h3>
-        <span className="shrink-0 text-[11px] text-ink-faint">{recencyLabel(company.discoveredAt)}</span>
+      <div className="flex items-start gap-2.5">
+        <CompanyLogo domain={company.domain} name={company.name} size={28} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="truncate font-serif text-base text-ink group-hover:text-accent">{company.name}</h3>
+            <span className="shrink-0 text-[11px] text-ink-faint">{recencyLabel(company.discoveredAt)}</span>
+          </div>
+          <p className="truncate text-xs text-ink-faint">{company.domain}</p>
+        </div>
       </div>
-      <p className="text-xs text-ink-faint">{company.domain}</p>
       {company.description ? <p className="mt-2 line-clamp-3 flex-1 text-sm text-ink-muted">{company.description}</p> : <div className="flex-1" />}
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
         {company.category ? <span className={categoryLabelClasses()}>{company.category}</span> : null}

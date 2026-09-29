@@ -12,7 +12,10 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
   const filtered = filterCompanies(companies, filters);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+    // Narrower than Explore's max-w-6xl on purpose: the Radar is a chronological feed, not a
+    // browse grid, and single-column cards stretched to 1152px left a lot of empty space between
+    // each card's text and its right-aligned badges on a real desktop monitor.
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
       <div className="mb-8">
         <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent">The Radar</p>
         <h1 className="mt-1.5 font-serif text-3xl text-ink">Recently discovered startups</h1>
