@@ -71,34 +71,11 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Radar homepage intro (components/intro/radar-intro.tsx) — ambient looping animations only;
- * the actual scroll-driven reveal is plain scroll position + inline styles, not CSS/JS keyframes,
- * so it stays perfectly reversible without anything here. */
-@keyframes radar-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.radar-sweep {
-  background: conic-gradient(from 0deg, transparent 0deg, var(--color-accent) 14deg, transparent 55deg);
-  animation: radar-spin 6s linear infinite;
-}
-
-@keyframes radar-blip {
-  0%,
-  100% {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-}
-.radar-blip {
-  animation: radar-blip 3.2s ease-in-out infinite;
-}
-
+/* Homepage intro (components/intro/home-intro.tsx, matrix-field.tsx) — the character-grid
+ * background itself is drawn on canvas (matrix-field.tsx), not CSS; what's left here is the
+ * scroll-cue bounce and the terminal-style blinking caret next to the live stat line. The actual
+ * scroll-driven reveal is plain scroll position + inline styles, not CSS/JS keyframes, so it stays
+ * perfectly reversible without anything here. */
 @keyframes scroll-cue-bounce {
   0%,
   100% {
@@ -114,68 +91,23 @@ body {
   animation: scroll-cue-bounce 2s ease-in-out infinite;
 }
 
-/* The "Detected — {company}" readout: a fresh element is mounted per cycle (`key={domain}` in
- * radar-intro.tsx), which restarts this animation — not a JS-driven opacity loop. */
-@keyframes hud-fade {
-  0% {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  12%,
-  85% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-  }
-}
-.hud-fade {
-  animation: hud-fade 2.2s ease-in-out;
-}
-
-/* Full-bleed intro background texture (radar-intro.tsx: HudField) — gives the wide margins either
- * side of the centered content on a real monitor an instrument-panel texture instead of reading as
- * empty canvas. Dot grid is static; only the sweep band moves, slowly. */
-.hud-grid {
-  background-image: radial-gradient(circle, var(--color-line-strong) 1.4px, transparent 1.4px);
-  background-size: 28px 28px;
-}
-
-@keyframes hud-sweep-move {
-  from {
-    transform: translateX(-120%);
-  }
-  to {
-    transform: translateX(220%);
-  }
-}
-.hud-sweep {
-  background: linear-gradient(90deg, transparent 0%, var(--color-accent) 50%, transparent 100%);
-  opacity: 0.05;
-  animation: hud-sweep-move 14s linear infinite;
-}
-
-@keyframes hud-pulse {
+@keyframes matrix-caret-blink {
   0%,
-  100% {
+  49% {
     opacity: 1;
   }
-  50% {
-    opacity: 0.25;
+  50%,
+  100% {
+    opacity: 0;
   }
 }
-.hud-pulse {
-  animation: hud-pulse 1.6s ease-in-out infinite;
+.matrix-caret {
+  animation: matrix-caret-blink 1s step-end infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .radar-sweep,
-  .radar-blip,
   .scroll-cue,
-  .hud-fade,
-  .hud-sweep,
-  .hud-pulse {
+  .matrix-caret {
     animation: none;
   }
 }

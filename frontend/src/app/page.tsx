@@ -3,10 +3,9 @@ import { CompanyCard } from "@/components/radar/company-card";
 import { CompanyFilterBar } from "@/components/controls/company-filter-bar";
 import { DataSourceBanner } from "@/components/ui/data-source-banner";
 import { EmptyState } from "@/components/ui/empty-state";
-import { RadarIntro } from "@/components/intro/radar-intro";
+import { HomeIntro } from "@/components/intro/home-intro";
 import { distinctCategories, distinctEventTypes, filterCompanies, parseFilters } from "@/lib/filters";
 import { daysSince } from "@/lib/derive/recency";
-import { compareMomentumDesc } from "@/lib/derive/momentum";
 
 export default async function RadarPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
@@ -16,22 +15,13 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
 
   const newThisWeek = companies.filter((c) => daysSince(c.discoveredAt) <= 7).length;
   const categoryCount = distinctCategories(companies).length;
-  const signalTypeCount = distinctEventTypes(companies).length;
-  const sourceCount = new Set(companies.map((c) => c.discoverySource).filter((s): s is string => Boolean(s))).size;
-
-  // The intro's "detections" are the same top-momentum companies Momentum would rank first on
-  // the real feed below (compareMomentumDesc, unchanged) — never a separately-invented list —
-  // so scrolling past the intro into the feed shows exactly what it just claimed to find.
-  const topSignals = [...companies]
-    .sort(compareMomentumDesc)
-    .slice(0, 6)
-    .map((c) => ({ name: c.name, domain: c.domain }));
 
   return (
     <>
-      {/* Scroll-revealed cover, only on the homepage — see radar-intro.tsx for the mechanics.
-          Deliberately outside <main>: it's a threshold you scroll through, not page content. */}
-      <RadarIntro topSignals={topSignals} totalCount={companies.length} sourceCount={sourceCount} signalTypeCount={signalTypeCount} />
+      {/* Scroll-revealed cover, only on the homepage — see components/intro/home-intro.tsx for
+          the mechanics. Deliberately outside <main>: it's a threshold you scroll through, not
+          page content. */}
+      <HomeIntro totalCount={companies.length} />
 
       {/* Wide enough to use a real desktop monitor (a narrower max-w-3xl read as a tiny column
           stranded in a sea of margin on a large screen — found in review); the feed row itself
