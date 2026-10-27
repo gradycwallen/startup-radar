@@ -14,9 +14,8 @@ export interface CompanyFilters {
 }
 
 // Momentum is the default sort for the main Radar/Explore experience — see
-// src/lib/derive/momentum.ts. Verified against the live database before making this the default
-// (see the Momentum delivery report): recently-discovered, well-corroborated, multi-signal
-// companies rank above old, thin, single-source ones, which is the whole point of the feature.
+// src/lib/derive/momentum.ts: companies with several recent, distinct signals rank above one-off
+// or stale ones, with recency deciding between companies with the same amount of activity.
 export const DEFAULT_FILTERS: CompanyFilters = {
   q: "",
   category: null,

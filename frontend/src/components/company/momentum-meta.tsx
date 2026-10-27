@@ -1,25 +1,25 @@
 import type { CompanyWithEvents } from "@/lib/data/types";
-import { computeMomentum, latestMemberTimestamp, type MomentumBand } from "@/lib/derive/momentum";
+import { computeMomentum, type MomentumBand } from "@/lib/derive/momentum";
 import { hourGranularRecencyLabel } from "@/lib/derive/recency";
 
 // Bars, not a color — Confidence (src/components/company/confidence-badge.tsx) already owns the
 // emerald/sky/faint dot language for evidence QUALITY. Momentum is a different axis (activity
 // LEVEL), so it gets a different shape entirely rather than reusing those hues for something else;
 // otherwise two unrelated metrics look like the same signal repeated. Filled-bar count carries the
-// level; color stays neutral ink throughout.
-const BAND_META: Record<MomentumBand, { label: string; text: string; filledBars: 1 | 2 | 3 }> = {
-  high: { label: "High Momentum", text: "text-ink", filledBars: 3 },
-  medium: { label: "Medium Momentum", text: "text-ink-muted", filledBars: 2 },
-  low: { label: "Low Momentum", text: "text-ink-faint", filledBars: 1 },
+// level; only High picks up the accent, so the busiest companies stand out in a scan.
+const BAND_META: Record<MomentumBand, { label: string; text: string; bar: string; filledBars: 1 | 2 | 3 }> = {
+  high: { label: "High Momentum", text: "text-accent", bar: "bg-accent", filledBars: 3 },
+  medium: { label: "Medium Momentum", text: "text-ink-muted", bar: "bg-ink-muted", filledBars: 2 },
+  low: { label: "Low Momentum", text: "text-ink-faint", bar: "bg-ink-faint", filledBars: 1 },
 };
 
-function MomentumBars({ filled }: { filled: 1 | 2 | 3 }) {
+function MomentumBars({ filled, bar: barColor }: { filled: 1 | 2 | 3; bar: string }) {
   return (
     <span aria-hidden className="flex shrink-0 items-end gap-[1.5px]">
       {([1, 2, 3] as const).map((bar) => (
         <span
           key={bar}
-          className={`w-[3px] rounded-[1px] ${bar <= filled ? "bg-ink" : "bg-line-strong"}`}
+          className={`w-[3px] rounded-[1px] ${bar <= filled ? barColor : "bg-line-strong"}`}
           style={{ height: 3 + bar * 2 }}
         />
       ))}
@@ -28,32 +28,28 @@ function MomentumBars({ filled }: { filled: 1 | 2 | 3 }) {
 }
 
 const TOOLTIP_TEXT =
-  "Momentum reflects how recent a company’s activity is, how well it is corroborated across sources, and how many different types of signals have appeared recently.";
+  "Momentum counts a company’s distinct signals (a funding round, a launch…) and weights each by how recent it is. News from the same week counts once, however many outlets cover it.";
 
-/** Compact Momentum metadata line for a company card/row — e.g. "High Momentum · 6 sources · 2
- * signal types · latest 3h ago" — plus a small, zero-JS info affordance explaining the concept.
+/** Compact Momentum metadata line for a company card/row — e.g. "High Momentum · 3 signals ·
+ * latest 3h ago" — plus a small, zero-JS info affordance explaining the concept.
  * Deliberately restrained: no score, no gauge, no meter (see src/lib/derive/momentum.ts). Renders
  * nothing for a company with no events at all (nothing to compute momentum from). */
 export function MomentumMeta({ company, now = new Date() }: { company: CompanyWithEvents; now?: Date }) {
   const momentum = computeMomentum(company, now);
-  if (!momentum.latestGroup) return null;
+  if (momentum.latestAt === null) return null;
 
   const meta = BAND_META[momentum.band];
-  const sourcesLabel = momentum.sourceCount === 1 ? "1 source" : `${momentum.sourceCount} sources`;
-  const typesLabel = momentum.signalTypeCount === 1 ? "1 signal type" : `${momentum.signalTypeCount} signal types`;
-  // The same MAX-across-members timestamp Recency itself is scored from (src/lib/derive/momentum.ts)
-  // — keeps this label consistent with the score even when the group's displayed `primary` source
-  // (chosen by confidence) isn't the group's most recently-dated member.
-  const latestLabel = hourGranularRecencyLabel(latestMemberTimestamp(momentum.latestGroup), now);
+  const signalsLabel = momentum.signalCount === 1 ? "1 signal" : `${momentum.signalCount} signals`;
+  const latestLabel = hourGranularRecencyLabel(momentum.latestAt, now);
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 text-xs">
+    <div className="flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
       <span className={`inline-flex items-center gap-1.5 font-medium ${meta.text}`}>
-        <MomentumBars filled={meta.filledBars} />
+        <MomentumBars filled={meta.filledBars} bar={meta.bar} />
         {meta.label}
       </span>
       <span className="text-ink-faint">
-        {sourcesLabel} · {typesLabel} · latest {latestLabel}
+        {signalsLabel} · latest {latestLabel}
       </span>
       <MomentumInfo />
     </div>

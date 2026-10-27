@@ -4,6 +4,7 @@ import { ExploreCard } from "@/components/explore/explore-card";
 import { CompanyFilterBar } from "@/components/controls/company-filter-bar";
 import { DataSourceBanner } from "@/components/ui/data-source-banner";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageBanner } from "@/components/layout/page-banner";
 import { distinctCategories, distinctEventTypes, filterCompanies, parseFilters } from "@/lib/filters";
 
 export const metadata: Metadata = { title: "Explore" };
@@ -15,24 +16,21 @@ export default async function ExplorePage({ searchParams }: PageProps<"/explore"
   const filtered = filterCompanies(companies, filters);
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-10 sm:px-8 sm:py-16">
-      <div className="max-w-2xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Explore</p>
-        <h1 className="mt-3 font-serif text-4xl leading-[1.05] tracking-tight text-ink sm:text-5xl">Browse the company universe</h1>
-        <p className="mt-5 text-base leading-relaxed text-ink-muted">
-          Search and filter every company Startup Radar has discovered — useful when you already know roughly what you&rsquo;re
-          looking for, or want to browse by category, signal type or confidence.
-        </p>
-      </div>
+    <>
+    <PageBanner eyebrow="Explore" title="Browse the company universe">
+      Search and filter every company Startup Radar has discovered — useful when you already know roughly what you&rsquo;re
+      looking for, or want to browse by category, signal type or confidence.
+    </PageBanner>
+    <main className="mx-auto max-w-7xl px-6 py-10 sm:px-8 sm:py-12">
 
       <DataSourceBanner source={source} />
 
-      <div className="mt-10">
+      <div className="mt-2">
         <CompanyFilterBar initial={filters} categories={distinctCategories(companies)} eventTypes={distinctEventTypes(companies)} variant="full" searchPlaceholder="Search by name, domain, category or description…" />
       </div>
 
       <div className="mb-6 mt-6 flex items-baseline justify-between">
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-faint">
+        <p className="font-mono text-xs uppercase tracking-[0.08em] text-ink-faint">
           {filtered.length} of {companies.length} {companies.length === 1 ? "company" : "companies"}
         </p>
       </div>
@@ -47,5 +45,6 @@ export default async function ExplorePage({ searchParams }: PageProps<"/explore"
         </div>
       )}
     </main>
+    </>
   );
 }

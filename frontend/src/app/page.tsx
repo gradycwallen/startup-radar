@@ -4,6 +4,7 @@ import { CompanyFilterBar } from "@/components/controls/company-filter-bar";
 import { DataSourceBanner } from "@/components/ui/data-source-banner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HomeIntro } from "@/components/intro/home-intro";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { distinctCategories, distinctEventTypes, filterCompanies, parseFilters } from "@/lib/filters";
 import { daysSince } from "@/lib/derive/recency";
 
@@ -29,13 +30,13 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
           than leaving it centered in a too-narrow tube. */}
       <main className="mx-auto max-w-7xl px-6 py-10 sm:px-8 sm:py-16">
         <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">The Radar</p>
+          <Eyebrow>The Radar</Eyebrow>
           <h1 className="mt-3 font-serif text-[2.75rem] leading-[1.03] tracking-tight text-ink sm:text-6xl">
             Recently discovered startups
           </h1>
           <p className="mt-5 text-base leading-relaxed text-ink-muted sm:text-lg">
             Companies Startup Radar&rsquo;s Scout has surfaced from funding announcements, stealth launches, accelerator cohorts and
-            product releases — ranked by recency, with the evidence behind every entry.
+            product releases — ranked by momentum, with the evidence behind every entry.
           </p>
         </div>
 
@@ -45,16 +46,16 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
             One rule (top only), not a boxed pair — see the line-density note below. */}
         <dl className="mt-14 flex flex-wrap gap-x-12 gap-y-5 border-t border-line pt-7">
           <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-faint">Companies tracked</dt>
-            <dd className="tabular mt-1 font-serif text-4xl text-ink sm:text-5xl">{companies.length}</dd>
+            <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">Companies tracked</dt>
+            <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl">{companies.length}</dd>
           </div>
           <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-faint">New this week</dt>
-            <dd className="tabular mt-1 font-serif text-4xl text-ink sm:text-5xl">{newThisWeek}</dd>
+            <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">New this week</dt>
+            <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl">{newThisWeek}</dd>
           </div>
           <div>
-            <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-faint">Categories</dt>
-            <dd className="tabular mt-1 font-serif text-4xl text-ink sm:text-5xl">{categoryCount}</dd>
+            <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">Categories</dt>
+            <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl">{categoryCount}</dd>
           </div>
         </dl>
 
@@ -68,7 +69,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
         </div>
 
         <div className="mb-2 mt-8 flex items-baseline justify-between">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-faint">
+          <p className="font-mono text-xs uppercase tracking-[0.08em] text-ink-faint">
             {filtered.length} {filtered.length === 1 ? "company" : "companies"}
           </p>
         </div>

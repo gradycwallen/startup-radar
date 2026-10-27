@@ -13,7 +13,7 @@ export function FirstLookSignalCard({ vm }: { vm: SignalViewModel }) {
   return (
     <SignalCardShell
       vm={vm}
-      tag={<span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">First observed</span>}
+      tag={<span className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-faint">First observed</span>}
     />
   );
 }

@@ -3,10 +3,11 @@
 /*
  * Design tokens for Startup Radar.
  *
- * Restrained neutral system (warm stone/zinc grays) with ONE intentional accent — amber, used
- * sparingly for signal/attention (active nav, primary actions, score meters) rather than as a
- * general brand color. Light and dark are the SAME visual identity, not two different-looking
- * themes — dark mode swaps the token values below, every component reads the tokens.
+ * Taken from the homepage's terminal hero (components/intro/home-intro.tsx): a near-black,
+ * cool-gray ground with ONE accent — signal cyan — used sparingly for attention (active nav,
+ * prompts, links, the strongest Momentum). Serif for display type, mono for anything
+ * terminal-shaped (labels, counts, metadata). Light and dark are the SAME identity — light is
+ * the same cool grays and a deeper cyan on paper; every component reads the tokens.
  *
  * Theme selection: an explicit `data-theme="light" | "dark"` attribute on <html>, set by the
  * blocking inline script in src/app/layout.tsx (src/lib/theme/theme-script.ts) before first paint —
@@ -16,33 +17,33 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-  --color-canvas: #fbfaf8;
+  --color-canvas: #f5f7f9;
   --color-surface: #ffffff;
-  --color-ink: #18181b;
-  --color-ink-muted: #52525b;
-  --color-ink-faint: #8a8a93;
-  --color-line: #e7e5e2;
-  --color-line-strong: #d4d2ce;
-  --color-accent: #b45309;
-  --color-accent-soft: #fef3e6;
+  --color-ink: #0b0f14;
+  --color-ink-muted: #4a5360;
+  --color-ink-faint: #7f8896;
+  --color-line: #e1e6ec;
+  --color-line-strong: #c9d1db;
+  --color-accent: #0a6d94;
+  --color-accent-soft: #e2f2f9;
 
   --font-sans: var(--font-public-sans);
   --font-serif: var(--font-newsreader);
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* Dark theme — neutral charcoal surfaces (never pure black, never warm/brown — matches the
- * neutral-gray dark mode of familiar tools like Claude's own UI, not a sepia tint), off-white ink,
- * and a lifted, more saturated amber so the accent keeps the same weight against a dark ground. */
+/* Dark theme — the hero's own palette: #06080b ground, #aab2bd body text, #5b6472 for the
+ * quietest text and #8fd8ff signal cyan, so scrolling past the hero never changes "rooms". */
 [data-theme="dark"] {
-  --color-canvas: #1a1a1a;
-  --color-surface: #242424;
-  --color-ink: #f0f0ee;
-  --color-ink-muted: #a8a8a6;
-  --color-ink-faint: #7d7d7b;
-  --color-line: #2f2f2e;
-  --color-line-strong: #3d3d3b;
-  --color-accent: #f0a94e;
-  --color-accent-soft: #2b2419;
+  --color-canvas: #06080b;
+  --color-surface: #0c1016;
+  --color-ink: #e8edf2;
+  --color-ink-muted: #aab2bd;
+  --color-ink-faint: #6b7584;
+  --color-line: #161c24;
+  --color-line-strong: #252d38;
+  --color-accent: #8fd8ff;
+  --color-accent-soft: #0d2230;
 }
 
 html {
@@ -103,6 +104,12 @@ body {
 }
 .matrix-caret {
   animation: matrix-caret-blink 1s step-end infinite;
+}
+
+/* Faint dot grid behind page content — a static echo of the hero's character field. */
+.grid-backdrop {
+  background-image: radial-gradient(color-mix(in srgb, var(--color-ink-faint) 22%, transparent) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
 
 @media (prefers-reduced-motion: reduce) {

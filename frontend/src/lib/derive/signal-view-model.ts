@@ -76,7 +76,7 @@ function familyLabel(family: string): string {
  * suite. The shorter suffix is the one invariant that's actually true of every level signal today. */
 const FIRST_LOOK_SUFFIX = "_at_first_observation";
 
-function classifyKind(signalType: string): SignalKind {
+export function classifyKind(signalType: string): SignalKind {
   return signalType.endsWith(FIRST_LOOK_SUFFIX) ? "first_look" : "transition";
 }
 

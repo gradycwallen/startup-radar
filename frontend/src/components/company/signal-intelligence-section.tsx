@@ -73,7 +73,7 @@ function SignalCardList({ viewModels }: { viewModels: SignalViewModel[] }) {
         const group = viewModels.filter((v) => v.family === family);
         return (
           <div key={family}>
-            <h3 className="text-xs font-medium uppercase tracking-[0.1em] text-ink-faint">{group[0]!.familyLabel}</h3>
+            <h3 className="font-mono text-xs uppercase tracking-[0.1em] text-ink-faint">{group[0]!.familyLabel}</h3>
             <div className="mt-2 divide-y divide-line">
               {group.map((vm) => (
                 <SignalCard key={vm.id} vm={vm} />

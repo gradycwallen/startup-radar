@@ -21,7 +21,7 @@ export function NavLinks() {
             href={link.href}
             className={clsx(
               "border-b-2 py-1.5 text-sm font-medium transition-colors",
-              active ? "border-ink text-ink" : "border-transparent text-ink-muted hover:text-ink",
+              active ? "border-accent text-ink" : "border-transparent text-ink-muted hover:text-ink",
             )}
           >
             {link.label}

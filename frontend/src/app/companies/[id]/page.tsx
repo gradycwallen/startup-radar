@@ -10,6 +10,7 @@ import { DataSourceBanner } from "@/components/ui/data-source-banner";
 import { CompanyLogo } from "@/components/ui/company-logo";
 import { categoryLabelClasses } from "@/lib/derive/category-color";
 import { formatDate, recencyLabel } from "@/lib/derive/recency";
+import { Eyebrow } from "@/components/ui/eyebrow";
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
@@ -36,8 +37,8 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10 sm:px-8 sm:py-16">
-      <Link href="/" className="text-sm font-medium text-ink-faint hover:text-ink">
-        ← Radar
+      <Link href="/" className="font-mono text-xs uppercase tracking-[0.12em] text-ink-faint hover:text-accent">
+        ← cd /radar
       </Link>
 
       <DataSourceBanner source={source} />
@@ -66,7 +67,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
 
       {company.discoveryReason ? (
         <div className="mt-8 max-w-2xl border-l-2 border-accent/50 pl-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-accent">Why it&rsquo;s on the radar</p>
+          <Eyebrow>Why it&rsquo;s on the radar</Eyebrow>
           <p className="mt-2 font-serif text-xl leading-snug text-ink">{company.discoveryReason}</p>
           {company.discoverySource ? (
             <p className="mt-2.5 text-xs text-ink-muted">

@@ -6,5 +6,5 @@ import { eventTypeMeta } from "@/lib/derive/event-type";
  * position in the card already disambiguates the two. */
 export function SignalBadge({ eventType, short = false }: { eventType: string; short?: boolean }) {
   const meta = eventTypeMeta(eventType);
-  return <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink">{short ? meta.short : meta.label}</span>;
+  return <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink">{short ? meta.short : meta.label}</span>;
 }

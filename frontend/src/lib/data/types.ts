@@ -53,6 +53,15 @@ export interface DiscoveryEvent {
 /** A company with its full event history attached, as most UI needs it. */
 export interface CompanyWithEvents extends Company {
   events: DiscoveryEvent[];
+  /** Just enough of each Signal Intelligence signal (public.signals) for Momentum to count real
+   * activity — see src/lib/derive/momentum.ts. Full signal detail is still only read per company
+   * (src/lib/data/signals.ts). Absent for mock data. */
+  activitySignals?: ActivitySignal[];
+}
+
+export interface ActivitySignal {
+  signalType: string;
+  firedAt: string; // ISO timestamptz
 }
 
 /** Where a given payload came from — surfaced in the UI so mock data is never mistaken for live

@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { getServerSupabaseClient } from "../supabase/server-client";
 import { MOCK_COMPANIES } from "../mock/companies";
-import type { Company, CompanyWithEvents, DataSource, DiscoveryEvent } from "./types";
+import type { ActivitySignal, Company, CompanyWithEvents, DataSource, DiscoveryEvent } from "./types";
 
 /**
  * The frontend's ONLY data-access module for companies/events. Everything here is READ-ONLY
@@ -39,6 +39,12 @@ interface EventRow {
   description: string | null;
   confidence: number | null;
   observed_at: string;
+}
+
+interface ActivitySignalRow {
+  company_id: number;
+  signal_type: string;
+  fired_at: string;
 }
 
 function mapCompany(row: CompanyRow): Company {
@@ -86,9 +92,10 @@ export const getAllCompaniesWithEvents = cache(async (): Promise<CompaniesResult
   const client = getServerSupabaseClient();
   if (!client) return { source: "mock", companies: [...MOCK_COMPANIES] };
 
-  const [companiesRes, eventsRes] = await Promise.all([
+  const [companiesRes, eventsRes, signalsRes] = await Promise.all([
     client.from("companies").select("id, name, domain, description, category, discovered_at, discovery_source, discovery_url, confidence, discovery_reason, founded_year"),
     client.from("discovery_events").select("id, company_id, event_type, event_date, source_name, source_url, headline, description, confidence, observed_at"),
+    client.from("signals").select("company_id, signal_type, fired_at"),
   ]);
 
   if (companiesRes.error || eventsRes.error) {
@@ -104,11 +111,21 @@ export const getAllCompaniesWithEvents = cache(async (): Promise<CompaniesResult
     eventsByCompany.set(event.companyId, list);
   }
 
+  // Signals only feed Momentum, so a failed read degrades ranking rather than swapping the whole
+  // page to mock data.
+  if (signalsRes.error) console.error("[data/companies] Supabase signals read failed, ranking Momentum on discovery events only:", signalsRes.error);
+  const signalsByCompany = new Map<number, ActivitySignal[]>();
+  for (const row of (signalsRes.error ? [] : (signalsRes.data ?? [])) as ActivitySignalRow[]) {
+    const list = signalsByCompany.get(row.company_id) ?? [];
+    list.push({ signalType: row.signal_type, firedAt: row.fired_at });
+    signalsByCompany.set(row.company_id, list);
+  }
+
   const companies: CompanyWithEvents[] = ((companiesRes.data ?? []) as CompanyRow[])
     .map((row) => {
       const company = mapCompany(row);
       const events = (eventsByCompany.get(company.id) ?? []).sort((a, b) => (b.eventDate ?? b.observedAt).localeCompare(a.eventDate ?? a.observedAt));
-      return { ...company, events };
+      return { ...company, events, activitySignals: signalsByCompany.get(company.id) ?? [] };
     })
     .sort((a, b) => b.discoveredAt.localeCompare(a.discoveredAt));
 

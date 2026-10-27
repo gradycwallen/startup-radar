@@ -3,5 +3,5 @@
  * primary marker). Plain small-caps text carries "this is a tag" without a ring/background — no
  * per-family color, see the design report for why a 4th color axis was deliberately avoided. */
 export function FamilyBadge({ label }: { label: string }) {
-  return <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">{label}</span>;
+  return <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-faint">{label}</span>;
 }

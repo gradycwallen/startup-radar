@@ -32,14 +32,14 @@ export function CompanyCard({ company }: { company: CompanyWithEvents }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
               <h3 className="truncate font-serif text-xl text-ink group-hover:text-accent">{company.name}</h3>
-              <span className="shrink-0 text-xs text-ink-faint">{company.domain}</span>
+              <span className="shrink-0 font-mono text-xs text-ink-faint">{company.domain}</span>
             </div>
             {company.description ? <p className="mt-1 line-clamp-2 max-w-4xl text-sm text-ink-muted">{company.description}</p> : null}
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <ConfidenceBadge confidence={company.confidence} />
-          <span className="text-xs text-ink-faint">{recencyLabel(company.discoveredAt)}</span>
+          <span className="font-mono text-[11px] text-ink-faint">{recencyLabel(company.discoveredAt)}</span>
         </div>
       </div>
 

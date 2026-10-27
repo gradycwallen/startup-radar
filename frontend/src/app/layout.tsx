@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Public_Sans, Newsreader } from "next/font/google";
+import { Public_Sans, Newsreader, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -22,6 +22,13 @@ const newsreader = Newsreader({
   display: "swap",
 });
 
+// Mono for terminal-shaped text (labels, counts, metadata) — the homepage hero's prompt line.
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: {
     default: "Startup Radar",
@@ -35,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // suppressHydrationWarning: the theme-init script (below) sets data-theme on this element
     // before React hydrates, so the server-rendered and first-client-rendered attributes
     // legitimately differ — that's the no-flash trade-off, not a real mismatch to fix.
-    <html lang="en" suppressHydrationWarning className={`${publicSans.variable} ${newsreader.variable} h-full`}>
+    <html lang="en" suppressHydrationWarning className={`${publicSans.variable} ${newsreader.variable} ${jetbrainsMono.variable} h-full`}>
       <body className="flex min-h-full flex-col bg-canvas font-sans text-ink antialiased">
         <Script id="theme-init" strategy="beforeInteractive">
           {themeInitScript()}

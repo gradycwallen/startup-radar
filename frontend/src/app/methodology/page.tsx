@@ -1,26 +1,25 @@
 import type { Metadata } from "next";
+import { PageBanner } from "@/components/layout/page-banner";
 
 export const metadata: Metadata = { title: "Methodology" };
 
 function Section({ heading, children }: { heading: string; children: React.ReactNode }) {
   return (
     <section className="border-t border-line py-8 first:border-t-0 first:pt-0">
-      <h2 className="font-serif text-xl text-ink">{heading}</h2>
-      <div className="mt-3 max-w-2xl space-y-3 text-sm leading-relaxed text-ink-muted">{children}</div>
+      <h2 className="font-serif text-2xl text-ink">{heading}</h2>
+      <div className="mt-3 max-w-2xl space-y-3 text-[15px] leading-relaxed text-ink-muted">{children}</div>
     </section>
   );
 }
 
 export default function MethodologyPage() {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10 sm:py-14">
-      <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent">Methodology</p>
-      <h1 className="mt-1.5 font-serif text-3xl text-ink">How Startup Radar works</h1>
-      <p className="mt-3 max-w-2xl text-sm text-ink-muted">
-        What Scout actually does, what the numbers on this site mean, and what we deliberately don&rsquo;t do.
-      </p>
-
-      <div className="mt-8">
+    <>
+    <PageBanner eyebrow="Methodology" title="How Startup Radar works">
+      What Scout actually does, what the numbers on this site mean, and what we deliberately don&rsquo;t do.
+    </PageBanner>
+    <main className="mx-auto max-w-7xl px-6 py-10 sm:px-8 sm:py-14">
+      <div className="max-w-3xl">
         <Section heading="Discovery">
           <p>
             Every company here was surfaced by Scout, Startup Radar&rsquo;s discovery engine, from real public sources: funding
@@ -48,13 +47,17 @@ export default function MethodologyPage() {
         </Section>
 
         <Section heading="Momentum">
-          <p>Momentum answers &ldquo;which companies deserve attention right now,&rdquo; from data already on the page — never a hidden score. It weighs three things:</p>
-          <ul className="list-inside list-disc space-y-1">
-            <li><span className="font-medium text-ink">Recency (50%)</span> — how fresh the company&rsquo;s latest activity is.</li>
-            <li><span className="font-medium text-ink">Corroboration (30%)</span> — how many independent sources back that activity.</li>
-            <li><span className="font-medium text-ink">Signal diversity (20%)</span> — how many different kinds of activity (funding, launch, hiring, and so on) have shown up recently.</li>
-          </ul>
-          <p>The underlying score is never shown as a number — only the High/Medium/Low band and the evidence behind it (source count, signal types, latest activity date).</p>
+          <p>
+            Momentum answers &ldquo;which companies deserve attention right now,&rdquo; from data already on the page — never a
+            hidden score. It counts how many distinct signals a company has shown (a funding round, a product launch, a stealth
+            exit, and so on) and weights each one by how recent it is: a signal from today counts in full, one from two weeks
+            ago counts half, and anything older than about three months drops out.
+          </p>
+          <p>
+            A signal is one news cycle, not one article — everything reported about a company within the same week, by any
+            number of outlets, counts as a single signal. How well a signal is sourced is what Confidence measures; Momentum is about how much is happening.
+          </p>
+          <p>The underlying score is never shown as a number — only the High/Medium/Low band, the signal count and the latest activity date.</p>
         </Section>
 
         <Section heading="Signal Intelligence">
@@ -89,5 +92,6 @@ export default function MethodologyPage() {
         </Section>
       </div>
     </main>
+    </>
   );
 }
