@@ -1,36 +1,14 @@
-import { CompanyCardSkeleton } from "@/components/ui/skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
-    <main className="mx-auto max-w-7xl px-6 py-10 sm:px-8 sm:py-16">
-      <div className="max-w-2xl">
-        <Skeleton className="h-3 w-20" />
-        <Skeleton className="mt-3 h-11 w-full max-w-md" />
-        <Skeleton className="mt-2 h-11 w-2/3" />
-        <Skeleton className="mt-5 h-4 w-full" />
-        <Skeleton className="mt-2 h-4 w-5/6" />
+    <main className="mx-auto max-w-7xl px-6 pb-16 pt-14 sm:px-8 sm:pt-20" aria-label="Loading companies">
+      <div className="grid gap-7 border-b border-line-strong pb-10 md:grid-cols-[1.5fr_1fr] md:items-end md:gap-16 md:pb-14">
+        <div><Skeleton className="h-3 w-40" /><Skeleton className="mt-5 h-16 w-4/5 sm:h-24" /><Skeleton className="mt-2 h-16 w-full sm:h-24" /></div>
+        <div><Skeleton className="h-5 w-full" /><Skeleton className="mt-3 h-5 w-4/5" /><Skeleton className="mt-3 h-5 w-2/3" /></div>
       </div>
-
-      <div className="mt-14 flex flex-wrap gap-x-12 gap-y-5 border-t border-line pt-7">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i}>
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="mt-2 h-10 w-14" />
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-14 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <Skeleton className="h-9 w-full sm:max-w-sm" />
-        <Skeleton className="h-6 w-32 shrink-0" />
-      </div>
-
-      <div className="mt-8 divide-y divide-line">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <CompanyCardSkeleton key={i} />
-        ))}
-      </div>
+      <div className="grid grid-cols-2 border-b border-line sm:grid-cols-3 lg:grid-cols-5">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="py-6"><Skeleton className="h-3 w-24" /><Skeleton className="mt-2 h-8 w-16" /></div>)}</div>
+      <div className="mt-10"><Skeleton className="h-3 w-24" /><Skeleton className="mt-2 h-9 w-64" /><Skeleton className="mt-10 h-10 w-full" />{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="mt-4 h-16 w-full" />)}</div>
     </main>
   );
 }

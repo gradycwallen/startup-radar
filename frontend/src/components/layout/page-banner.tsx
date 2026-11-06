@@ -9,7 +9,7 @@ export function PageBanner({ eyebrow, title, children }: { eyebrow: string; titl
     <div className="stagger mx-auto max-w-7xl px-6 pt-10 sm:px-8 sm:pt-16">
       <div className="max-w-2xl">
         <Eyebrow>{eyebrow}</Eyebrow>
-        <h1 className="mt-3 font-serif text-4xl leading-[1.05] tracking-tight text-ink sm:text-6xl">{title}</h1>
+        <h1 className="mt-3 text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl">{title}</h1>
         {children ? <p className="mt-5 text-base leading-relaxed text-ink-muted sm:text-lg">{children}</p> : null}
       </div>
     </div>
