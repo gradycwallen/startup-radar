@@ -27,7 +27,7 @@ export default function MethodologyPage() {
             tech press and directory listings.
           </p>
           <p>
-            Discovery is deterministic — extraction, filtering and ranking run on fixed rules, not a model guessing at what
+            Discovery is deterministic: extraction, filtering and ranking run on fixed rules, not a model guessing at what
             looks interesting. Nothing is invented: every entry links back to the real article or listing it came from, and the
             &ldquo;why it&rsquo;s on the radar&rdquo; line on each company is the actual evidence that got it accepted, not
             generated summary text.
@@ -37,27 +37,27 @@ export default function MethodologyPage() {
         <Section heading="Confidence">
           <p>
             Every company and every discovery event carries a confidence score, reflecting how well-evidenced that specific
-            claim is — never a guess at the company&rsquo;s quality or prospects.
+            claim is, never a guess at the company&rsquo;s quality or prospects.
           </p>
           <ul className="list-inside list-disc space-y-1">
-            <li><span className="font-medium text-ink">Strong evidence</span> — 90%+, typically multiple independent sources agreeing.</li>
-            <li><span className="font-medium text-ink">Moderate evidence</span> — 75–89%, a credible single source or thinner corroboration.</li>
-            <li><span className="font-medium text-ink">Emerging signal</span> — below 75%, or not yet rated: still worth surfacing, less certain.</li>
+            <li><span className="font-medium text-ink">Strong evidence</span>: 90%+, typically multiple independent sources agreeing.</li>
+            <li><span className="font-medium text-ink">Moderate evidence</span>: 75–89%, a credible single source or thinner corroboration.</li>
+            <li><span className="font-medium text-ink">Emerging signal</span>: below 75%, or not yet rated: still worth surfacing, less certain.</li>
           </ul>
         </Section>
 
         <Section heading="Momentum">
           <p>
-            Momentum answers &ldquo;which companies deserve attention right now,&rdquo; from data already on the page — never a
+            Momentum answers &ldquo;which companies deserve attention right now,&rdquo; from data already on the page, never a
             hidden score. It counts how many distinct signals a company has shown (a funding round, a product launch, a stealth
             exit, and so on) and weights each one by how recent it is: a signal from today counts in full, one from two weeks
             ago counts half, and anything older than about three months drops out.
           </p>
           <p>
-            A signal is one news cycle, not one article — everything reported about a company within the same week, by any
+            A signal is one news cycle, not one article. Everything reported about a company within the same week, by any
             number of outlets, counts as a single signal. How well a signal is sourced is what Confidence measures; Momentum is about how much is happening.
           </p>
-          <p>The underlying score is never shown as a number — only the High/Medium/Low band, the signal count and the latest activity date.</p>
+          <p>The underlying score is never shown as a number, only the High/Medium/Low band, the signal count and the latest activity date.</p>
         </Section>
 
         <Section heading="Signal Intelligence">
@@ -69,15 +69,15 @@ export default function MethodologyPage() {
             Two distinct kinds of evidence appear on a Company Detail page, and we&rsquo;re careful never to blur them:
           </p>
           <ul className="list-inside list-disc space-y-1">
-            <li><span className="font-medium text-ink">First observed</span> — the state Scout saw the first time it looked. Not a claim that anything changed, just what was true at first look.</li>
-            <li><span className="font-medium text-ink">Confirmed change</span> — a real transition witnessed over time (e.g. a pricing page appearing where none existed before), only shown once it&rsquo;s been confirmed on a second, independent pass.</li>
+            <li><span className="font-medium text-ink">First observed</span>: the state Scout saw the first time it looked. Not a claim that anything changed, just what was true at first look.</li>
+            <li><span className="font-medium text-ink">Confirmed change</span>: a real transition witnessed over time (e.g. a pricing page appearing where none existed before), only shown once it&rsquo;s been confirmed on a second, independent pass.</li>
           </ul>
         </Section>
 
         <Section heading="What we don't do">
           <p>
             We don&rsquo;t fabricate enrichment. If a founder name, funding stage, headcount or similar detail isn&rsquo;t
-            something Scout actually found evidence for, it simply isn&rsquo;t shown — never guessed or generated to fill a
+            something Scout actually found evidence for, it simply isn&rsquo;t shown, never guessed or generated to fill a
             field. We also don&rsquo;t run a general-purpose AI model over the open web to invent candidates: discovery is
             rule-based specifically so every result traces back to a real, checkable source.
           </p>
@@ -85,7 +85,7 @@ export default function MethodologyPage() {
 
         <Section heading="Data">
           <p>
-            The current dataset is available as a plain export — the same records the site renders, nothing extra, no
+            The current dataset is available as a plain export, the same records the site renders, nothing extra, no
             key required:{" "}
             <a href="/api/companies" className="font-medium text-accent hover:underline">
               JSON
@@ -101,7 +101,7 @@ export default function MethodologyPage() {
         <Section heading="Disclaimer">
           <p>
             Startup Radar is an evidence-tracking product, not financial or investment advice. Confidence and Momentum
-            describe how well-evidenced and how active something appears in public sources — not a recommendation to invest,
+            describe how well-evidenced and how active something appears in public sources, not a recommendation to invest,
             work for, or partner with any company listed here.
           </p>
         </Section>

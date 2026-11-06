@@ -33,7 +33,7 @@ export function SignalIntelligenceSection({ intelligence }: { intelligence: Sign
   return (
     <section className="mt-14 max-w-3xl">
       <h2 className="text-2xl font-bold tracking-tight text-ink">Signal intelligence</h2>
-      <p className="mt-1.5 text-sm text-ink-muted">Deterministic signals Startup Radar has derived from hiring, GitHub and website activity — never inferred, never scored.</p>
+      <p className="mt-1.5 text-sm text-ink-muted">Deterministic signals Startup Radar has derived from hiring, GitHub and website activity, never inferred, never scored.</p>
       <CoverageLine text={coverageText} />
 
       {viewModels.length === 0 ? (

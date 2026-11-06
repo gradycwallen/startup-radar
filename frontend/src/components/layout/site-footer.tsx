@@ -14,7 +14,7 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-14 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-serif text-2xl tracking-tight text-ink">Startup Radar</p>
-          <p className="mt-2 max-w-xs text-sm text-ink-muted">Discovery intelligence for emerging startups — before they&rsquo;re obvious.</p>
+          <p className="mt-2 max-w-xs text-sm text-ink-muted">Discovery intelligence for emerging startups, before they&rsquo;re obvious.</p>
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
           {LINKS.map((link) => (

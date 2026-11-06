@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     default: "Startup Radar",
     template: "%s · Startup Radar",
   },
-  description: "Discovery intelligence for emerging startups — before they're obvious.",
+  description: "Discovery intelligence for emerging startups, before they're obvious.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

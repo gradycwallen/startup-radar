@@ -34,7 +34,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
       </div>
 
       <dl className="grid grid-cols-2 border-b border-line sm:grid-cols-3 lg:grid-cols-5">
-        {stats.map(([label, value]) => <div key={label} className="border-l border-line py-5 pl-4 pr-2 first:border-l-0 first:pl-0 sm:py-7 lg:pl-6"><dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">{label}</dt><dd className="tabular mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{value === null ? "—" : label === "Total observations" && value >= 1000 ? <span title={value.toLocaleString("en-US")} aria-label={`${value.toLocaleString("en-US")} observations`}>{Math.floor(value / 1000)}K+</span> : value.toLocaleString("en-US")}</dd></div>)}
+        {stats.map(([label, value]) => <div key={label} className="border-l border-line py-5 pl-4 pr-2 first:border-l-0 first:pl-0 sm:py-7 lg:pl-6"><dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">{label}</dt><dd className="tabular mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{value === null ? "N/A" : label === "Total observations" && value >= 1000 ? <span title={value.toLocaleString("en-US")} aria-label={`${value.toLocaleString("en-US")} observations`}>{Math.floor(value / 1000)}K+</span> : value.toLocaleString("en-US")}</dd></div>)}
       </dl>
       <p className="mt-3 text-xs leading-relaxed text-ink-muted"><strong className="text-ink">Observations</strong> are recorded measurements; <strong className="text-ink">signals</strong> are rule-derived findings from those observations. <Link href="/methodology" className="text-accent hover:underline">Learn more</Link></p>
       <DataSourceBanner source={source} />

@@ -14,7 +14,7 @@ export default function GlobalError({ error, retry }: { error: Error & { digest?
       <Eyebrow>Error</Eyebrow>
       <h1 className="mt-2 font-serif text-2xl text-ink">Something interrupted this view</h1>
       <p className="mt-3 max-w-sm text-sm text-ink-muted">
-        This didn&rsquo;t affect Startup Radar&rsquo;s data — nothing was written or changed. Try again, or head back to the Radar.
+        This didn&rsquo;t affect Startup Radar&rsquo;s data, nothing was written or changed. Try again, or head back to the Radar.
       </p>
       <div className="mt-6 flex gap-3">
         <button type="button" onClick={() => retry()} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-canvas hover:bg-ink/90">

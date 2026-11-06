@@ -415,7 +415,7 @@ export const SIGNAL_EMPTY_STATE_COPY = {
   /** No signal_sources resolved at all yet. */
   noSources: "Signal tracking has not started for this company yet.",
   /** Sources resolved, but deriveSignalsForCompany hasn't fired anything yet. */
-  noSignalsYet: "Tracking started — no notable change detected yet.",
+  noSignalsYet: "Tracking started, no notable change detected yet.",
   /** A specific piece of evidence Scout hasn't determined (page/metric unknown) — used inside
    * evidence rendering, never as a top-level section message. */
   notYetDetermined: "Not yet determined",
