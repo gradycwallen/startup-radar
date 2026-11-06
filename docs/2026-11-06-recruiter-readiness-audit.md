@@ -2,7 +2,7 @@
 
 Read-only audit of local frontend, repository, public source samples, GitHub Actions and live database. Snapshot counts and rankings change as jobs run. No database records, credentials, workflows or deployment settings were modified.
 
-**Follow-up:** On November 6, the Kabilio and Biograil descriptions and XDOF discovery event were corrected in the database. The Charter Space source correction and observation exclusion require separate verification after the updated signal code is deployed. A longer signal-job timeout has been prepared, but a completed live run is needed before treating the automation as repaired. The findings below describe the original audit snapshot.
+**Follow-up:** On November 6, the Kabilio and Biograil descriptions and XDOF discovery event were corrected. Charter Space's domain was corrected to `charter.space` and source 82 was marked inactive and excluded from signal history; its 254 observations remain preserved. The replacement source (id 230) recorded seven observations, with no signals as of the verification. The [manual signal run](https://github.com/gradycwallen/startup-radar/actions/runs/42288618368) using the updated timeout completed successfully: 238 companies considered, 71 sources collected, 224 skipped as fresh, zero collection failures, and 864.1 seconds elapsed. Future scheduled runs still need monitoring as the dataset grows. The findings below describe the original audit snapshot.
 
 ## High priority
 
