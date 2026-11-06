@@ -27,11 +27,8 @@ function MomentumBars({ filled, bar: barColor }: { filled: 1 | 2 | 3; bar: strin
   );
 }
 
-const TOOLTIP_TEXT =
-  "Momentum counts a company’s distinct signals (a funding round, a launch…) and weights each by how recent it is. News from the same week counts once, however many outlets cover it.";
-
 /** Compact Momentum metadata line for a company card/row — e.g. "High Momentum · 3 signals ·
- * latest 3h ago" — plus a small, zero-JS info affordance explaining the concept.
+ * latest 3h ago".
  * Deliberately restrained: no score, no gauge, no meter (see src/lib/derive/momentum.ts). Renders
  * nothing for a company with no events at all (nothing to compute momentum from). */
 export function MomentumMeta({ company, now = new Date() }: { company: CompanyWithEvents; now?: Date }) {
@@ -51,31 +48,6 @@ export function MomentumMeta({ company, now = new Date() }: { company: CompanyWi
       <span className="text-ink-faint">
         {signalsLabel} · latest {latestLabel}
       </span>
-      <MomentumInfo />
     </div>
-  );
-}
-
-/** A small "i" affordance with a CSS-only tooltip (no client component / JS needed — shown on
- * hover via `:hover` and on keyboard focus via `:focus-within`, so it works for mouse, touch-hold
- * and keyboard users alike) plus a native `title` as a redundant fallback. */
-function MomentumInfo() {
-  return (
-    <span className="group relative inline-flex">
-      <button
-        type="button"
-        aria-label="What is Momentum?"
-        title={TOOLTIP_TEXT}
-        className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[10px] leading-none text-ink-faint ring-1 ring-inset ring-line hover:text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-      >
-        i
-      </button>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-56 -translate-x-1/2 rounded-md bg-ink px-2.5 py-1.5 text-[11px] leading-snug text-canvas opacity-0 shadow-lg transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-canvas dark:text-ink dark:ring-1 dark:ring-line"
-      >
-        {TOOLTIP_TEXT}
-      </span>
-    </span>
   );
 }

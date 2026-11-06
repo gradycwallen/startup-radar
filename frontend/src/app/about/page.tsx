@@ -22,7 +22,7 @@ function Section({ heading, children }: { heading: string; children: React.React
 }
 
 export default async function AboutPage() {
-  const { companies } = await getAllCompaniesWithEvents();
+  const { source, companies } = await getAllCompaniesWithEvents();
 
   return (
     <>
@@ -31,18 +31,21 @@ export default async function AboutPage() {
       </PageBanner>
       <main className="mx-auto max-w-7xl px-6 pb-10 pt-8 sm:px-8 sm:pb-16 sm:pt-10">
         <div className="max-w-3xl">
+          <div className="mb-10 grid gap-6 border border-line bg-accent-soft/40 p-6 sm:grid-cols-3">
+            <div><p className="text-xs font-semibold uppercase tracking-wider text-accent">The problem</p><p className="mt-2 text-sm leading-relaxed text-ink-muted">Early startup signals are scattered across public sources and difficult to assess consistently.</p></div>
+            <div><p className="text-xs font-semibold uppercase tracking-wider text-accent">What I built</p><p className="mt-2 text-sm leading-relaxed text-ink-muted">A deterministic discovery and observation pipeline with source-linked company profiles.</p></div>
+            <div><p className="text-xs font-semibold uppercase tracking-wider text-accent">What I learned</p><p className="mt-2 text-sm leading-relaxed text-ink-muted">Bounded systems are easier to operate, and uncertain identity matches need independent evidence.</p></div>
+          </div>
           <Section heading="Why I built this">
             <p>
               I wanted to understand what it actually takes to evaluate something as uncertain as an early-stage startup —
               not by reading about it, but by building a system that has to make that call, over and over, on real
               companies, and show its work every time. Startup Radar is a discovery engine: it finds emerging companies
               from public sources — funding announcements, accelerator cohorts, stealth launches — before they&rsquo;re
-              widely covered, and attaches a confidence score and an evidence trail to every single claim it makes.
+              widely covered, and records confidence and source links so readers can examine the evidence themselves.
             </p>
             <p>
-              As of today it&rsquo;s tracking <span className="font-medium text-ink">{companies.length} real companies</span>,
-              discovered and ranked entirely by code, with zero hand-entered data and zero fabricated enrichment anywhere
-              on the site.
+              {source === "supabase" ? <>The current directory contains <span className="font-medium text-ink">{companies.length} companies</span>, discovered and ranked by code.</> : <>Live data is unavailable, so the directory is showing a labeled sample.</>} Source links support independent review, and an incorrect match can still require correction.
             </p>
           </Section>
 

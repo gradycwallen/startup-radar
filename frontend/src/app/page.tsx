@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { distinctCategories, distinctEventTypes, filterCompanies, parseFilters } from "@/lib/filters";
 import { daysSince } from "@/lib/derive/recency";
 import Link from "next/link";
+import { StartExploring } from "@/components/radar/start-exploring";
 
 export default async function RadarPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
@@ -46,6 +47,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
         </ol>
         <Link href="/about" className="mt-4 inline-block text-sm font-medium text-accent hover:underline">About the project →</Link>
       </details>
+      {source === "supabase" && <StartExploring companies={companies} />}
       <section aria-label="Company directory" className="mt-10">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">The radar</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Companies to watch</h2></div><div className="flex flex-wrap gap-4 text-xs"><a href="/api/companies" className="font-medium text-accent hover:underline">Export JSON</a><a href="/api/companies?format=csv" className="font-medium text-accent hover:underline">Export CSV</a><p className="font-mono uppercase tracking-wider text-ink-faint">{filtered.length} {filtered.length === 1 ? "company" : "companies"}</p></div></div>
         <CompanyFilterBar initial={filters} categories={categories} eventTypes={distinctEventTypes(companies)} variant="full" searchPlaceholder="Search companies, domains or categories…" />

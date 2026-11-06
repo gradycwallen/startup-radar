@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { NavLinks } from "./nav-links";
-import { ThemeToggle } from "./theme-toggle";
 
 export function SiteHeader() {
   return (
@@ -13,11 +12,7 @@ export function SiteHeader() {
           <Image src="/startup-radar-mark.png" alt="" width={42} height={42} className="h-9 w-9 mix-blend-multiply dark:invert dark:mix-blend-screen sm:h-11 sm:w-11" />
           <span className="text-lg font-bold tracking-tight text-ink sm:text-2xl">Startup Radar</span>
         </Link>
-        <div className="flex items-center gap-3 sm:gap-6">
-          <NavLinks />
-          <span aria-hidden className="h-5 w-px bg-line" />
-          <ThemeToggle />
-        </div>
+        <NavLinks />
       </div>
     </header>
   );
