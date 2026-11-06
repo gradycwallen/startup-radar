@@ -14,7 +14,7 @@ export function ExploreCard({ company }: { company: CompanyWithEvents }) {
   return (
     <Link
       href={`/companies/${company.id}`}
-      className="reveal group flex h-full flex-col rounded-lg border border-line bg-surface p-4 transition-[border-color,transform,box-shadow] duration-300 ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[0_12px_32px_-16px_color-mix(in_srgb,var(--color-accent)_35%,transparent)]"
+      className="reveal group flex h-full flex-col rounded-lg border border-line bg-surface p-4 transition-colors duration-200 hover:border-accent/40"
     >
       <div className="flex items-start gap-2.5">
         <CompanyLogo domain={company.domain} name={company.name} size={28} />

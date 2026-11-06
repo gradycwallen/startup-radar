@@ -3,7 +3,6 @@ import { CompanyCard } from "@/components/radar/company-card";
 import { CompanyFilterBar } from "@/components/controls/company-filter-bar";
 import { DataSourceBanner } from "@/components/ui/data-source-banner";
 import { EmptyState } from "@/components/ui/empty-state";
-import { HomeIntro } from "@/components/intro/home-intro";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { CountUp } from "@/components/ui/count-up";
 import { distinctCategories, distinctEventTypes, filterCompanies, parseFilters } from "@/lib/filters";
@@ -20,11 +19,6 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
 
   return (
     <>
-      {/* Scroll-revealed cover, only on the homepage — see components/intro/home-intro.tsx for
-          the mechanics. Deliberately outside <main>: it's a threshold you scroll through, not
-          page content. */}
-      <HomeIntro totalCount={companies.length} />
-
       {/* Wide enough to use a real desktop monitor (a narrower max-w-3xl read as a tiny column
           stranded in a sea of margin on a large screen — found in review); the feed row itself
           (company-card.tsx) spreads its own content across this width via justify-between rather
@@ -45,7 +39,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
             real, live dataset" signal that a paragraph alone can't. Every number here is a direct
             count over the same `companies` this page renders, never a separately-computed figure.
             One rule (top only), not a boxed pair — see the line-density note below. */}
-        <dl className="mt-14 flex flex-wrap gap-x-12 gap-y-5 border-t border-line pt-7">
+        <dl className="stagger mt-14 flex flex-wrap gap-x-12 gap-y-5 border-t border-line pt-7">
           <div>
             <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">Companies tracked</dt>
             <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl"><CountUp value={companies.length} /></dd>

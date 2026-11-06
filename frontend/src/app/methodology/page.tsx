@@ -18,7 +18,7 @@ export default function MethodologyPage() {
     <PageBanner eyebrow="Methodology" title="How Startup Radar works">
       What Scout actually does, what the numbers on this site mean, and what we deliberately don&rsquo;t do.
     </PageBanner>
-    <main className="mx-auto max-w-7xl px-6 py-10 sm:px-8 sm:py-14">
+    <main className="mx-auto max-w-7xl px-6 pb-10 pt-8 sm:px-8 sm:pb-14 sm:pt-10">
       <div className="max-w-3xl">
         <Section heading="Discovery">
           <p>
@@ -80,6 +80,21 @@ export default function MethodologyPage() {
             something Scout actually found evidence for, it simply isn&rsquo;t shown — never guessed or generated to fill a
             field. We also don&rsquo;t run a general-purpose AI model over the open web to invent candidates: discovery is
             rule-based specifically so every result traces back to a real, checkable source.
+          </p>
+        </Section>
+
+        <Section heading="Data">
+          <p>
+            The current dataset is available as a plain export — the same records the site renders, nothing extra, no
+            key required:{" "}
+            <a href="/api/companies" className="font-medium text-accent hover:underline">
+              JSON
+            </a>
+            {" · "}
+            <a href="/api/companies?format=csv" className="font-medium text-accent hover:underline">
+              CSV
+            </a>
+            .
           </p>
         </Section>
 

@@ -41,13 +41,15 @@ npx tsc --noEmit -p tsconfig.json   # typecheck (run `npx next typegen` first if
 
 ## Structure
 
-- `src/app/` — routes: `/` (Radar feed), `/explore` (browse/search), `/companies/[id]` (company detail).
-- `src/components/` — `layout/` (header/nav), `radar/`, `explore/`, `company/` (detail-page pieces:
-  timeline, radar score, confidence badge), `controls/` (the shared filter bar), `ui/` (small
-  primitives: badge, empty state, skeleton, data-source banner).
+- `src/app/` — routes: `/` (Radar feed), `/explore` (browse/search), `/companies/[id]` (company
+  detail), `/methodology` (how discovery/confidence/Momentum work), `/about` (the engineering
+  writeup), `/api/companies` (a public JSON/CSV export of the current dataset).
+- `src/components/` — `layout/` (header/nav/footer/page banner), `radar/`, `explore/`, `company/`
+  (detail-page pieces: timeline, confidence badge, Signal Intelligence cards), `controls/` (the
+  shared filter bar), `ui/` (small primitives: empty state, skeleton, count-up, data-source banner).
 - `src/lib/data/` — the ONLY module that talks to Supabase (read-only), plus the domain types.
 - `src/lib/supabase/` — the server-only Supabase client factory.
 - `src/lib/mock/` — clearly-fictional fallback data, used only when Supabase isn't configured.
 - `src/lib/derive/` — transparent, computed-not-fabricated presentation values (confidence tier,
-  recency label, category color, the derived "Radar Score").
+  recency label, category color, Momentum — never a single hidden score, see `momentum.ts`).
 - `src/lib/filters.ts` — shared search/filter/sort logic for the Radar and Explore pages.

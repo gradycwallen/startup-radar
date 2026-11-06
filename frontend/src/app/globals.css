@@ -3,11 +3,13 @@
 /*
  * Design tokens for Startup Radar.
  *
- * Taken from the homepage's terminal hero (components/intro/home-intro.tsx): a near-black,
- * cool-gray ground with ONE accent — signal cyan — used sparingly for attention (active nav,
- * prompts, links, the strongest Momentum). Serif for display type, mono for anything
- * terminal-shaped (labels, counts, metadata). Light and dark are the SAME identity — light is
- * the same cool grays and a deeper cyan on paper; every component reads the tokens.
+ * Restrained neutral system (warm stone/zinc grays) with ONE intentional accent — amber, used
+ * sparingly for signal/attention (active nav, primary actions, the strongest Momentum) rather
+ * than as a general brand color. Light and dark are the SAME visual identity, not two
+ * different-looking themes — dark mode swaps the token values below, every component reads the
+ * tokens. Serif for display type (editorial, not a generic SaaS sans), a restrained sans for body,
+ * monospace only for genuinely tabular/data text (counts, domains, timestamps) — not a thematic
+ * statement, just how a dense data table usually sets numbers.
  *
  * Theme selection: an explicit `data-theme="light" | "dark"` attribute on <html>, set by the
  * blocking inline script in src/app/layout.tsx (src/lib/theme/theme-script.ts) before first paint —
@@ -17,33 +19,33 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-  --color-canvas: #f5f7f9;
+  --color-canvas: #fbfaf8;
   --color-surface: #ffffff;
-  --color-ink: #0b0f14;
-  --color-ink-muted: #4a5360;
-  --color-ink-faint: #7f8896;
-  --color-line: #e1e6ec;
-  --color-line-strong: #c9d1db;
-  --color-accent: #0a6d94;
-  --color-accent-soft: #e2f2f9;
+  --color-ink: #18181b;
+  --color-ink-muted: #52525b;
+  --color-ink-faint: #8a8a93;
+  --color-line: #e7e5e2;
+  --color-line-strong: #d4d2ce;
+  --color-accent: #b45309;
+  --color-accent-soft: #fef3e6;
 
   --font-sans: var(--font-public-sans);
   --font-serif: var(--font-newsreader);
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* Dark theme — the hero's own palette: #06080b ground, #aab2bd body text, #5b6472 for the
- * quietest text and #8fd8ff signal cyan, so scrolling past the hero never changes "rooms". */
+/* Dark theme — neutral charcoal surfaces (never pure black, never warm/brown), off-white ink, and
+ * a lifted, more saturated amber so the accent keeps the same weight against a dark ground. */
 [data-theme="dark"] {
-  --color-canvas: #06080b;
-  --color-surface: #0c1016;
-  --color-ink: #e8edf2;
-  --color-ink-muted: #aab2bd;
-  --color-ink-faint: #6b7584;
-  --color-line: #161c24;
-  --color-line-strong: #252d38;
-  --color-accent: #8fd8ff;
-  --color-accent-soft: #0d2230;
+  --color-canvas: #1a1a1a;
+  --color-surface: #242424;
+  --color-ink: #f0f0ee;
+  --color-ink-muted: #a8a8a6;
+  --color-ink-faint: #7d7d7b;
+  --color-line: #2f2f2e;
+  --color-line-strong: #3d3d3b;
+  --color-accent: #f0a94e;
+  --color-accent-soft: #2b2419;
 }
 
 html {
@@ -72,43 +74,11 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Homepage intro (components/intro/home-intro.tsx, matrix-field.tsx) — the character-grid
- * background itself is drawn on canvas (matrix-field.tsx), not CSS; what's left here is the
- * scroll-cue bounce and the terminal-style blinking caret next to the live stat line. The actual
- * scroll-driven reveal is plain scroll position + inline styles, not CSS/JS keyframes, so it stays
- * perfectly reversible without anything here. */
-@keyframes scroll-cue-bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.6;
-  }
-  50% {
-    transform: translateY(6px);
-    opacity: 1;
-  }
-}
-.scroll-cue {
-  animation: scroll-cue-bounce 2s ease-in-out infinite;
-}
-
-@keyframes matrix-caret-blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-.matrix-caret {
-  animation: matrix-caret-blink 1s step-end infinite;
-}
-
 /* ---- Motion -------------------------------------------------------------------------------
- * One easing curve and two durations for the whole site, so every movement feels like the same
- * hand made it. Everything below is switched off under prefers-reduced-motion (end of file). */
+ * Deliberately minimal: one easing curve, a brief fade-up on load, and a scroll-driven fade for
+ * feed rows. No marquees, no canvas effects, no scramble/distortion — motion here is a quiet
+ * confirmation that content loaded, not a demo of what's possible. Everything is switched off
+ * under prefers-reduced-motion (end of file). */
 :root {
   --ease-out: cubic-bezier(0.22, 0.75, 0.2, 1);
 }
@@ -125,16 +95,16 @@ body {
   }
 }
 .stagger > * {
-  animation: rise 0.7s var(--ease-out) both;
+  animation: rise 0.5s var(--ease-out) both;
 }
 .stagger > :nth-child(2) {
-  animation-delay: 0.08s;
+  animation-delay: 0.06s;
 }
 .stagger > :nth-child(3) {
-  animation-delay: 0.16s;
+  animation-delay: 0.12s;
 }
 .stagger > :nth-child(n + 4) {
-  animation-delay: 0.24s;
+  animation-delay: 0.18s;
 }
 
 /* Feed rows and cards fade up as they scroll into view. CSS scroll-driven animation only — where
@@ -147,53 +117,9 @@ body {
   }
 }
 
-/* Masthead ticker (components/layout/signal-ticker.tsx). */
-@keyframes ticker {
-  to {
-    transform: translateX(-50%);
-  }
-}
-.ticker-track {
-  animation: ticker 80s linear infinite;
-}
-.ticker:hover .ticker-track,
-.ticker:focus-within .ticker-track {
-  animation-play-state: paused;
-}
-.ticker-mask {
-  mask-image: linear-gradient(to right, transparent, #000 4%, #000 92%, transparent);
-}
-@keyframes live-pulse {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 55%, transparent);
-  }
-  70%,
-  100% {
-    box-shadow: 0 0 0 6px transparent;
-  }
-}
-.live-dot {
-  animation: live-pulse 2s var(--ease-out) infinite;
-}
-
-/* Faint dot grid behind page content — a static echo of the hero's character field. */
-.grid-backdrop {
-  background-image: radial-gradient(color-mix(in srgb, var(--color-ink-faint) 22%, transparent) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .scroll-cue,
-  .matrix-caret,
   .stagger > *,
-  .reveal,
-  .live-dot {
+  .reveal {
     animation: none;
-  }
-  .ticker-track {
-    animation: none;
-  }
-  .ticker-mask {
-    overflow-x: auto;
   }
 }

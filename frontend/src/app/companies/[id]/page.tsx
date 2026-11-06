@@ -37,8 +37,8 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10 sm:px-8 sm:py-16">
-      <Link href="/" className="font-mono text-xs uppercase tracking-[0.12em] text-ink-faint hover:text-accent">
-        ← cd /radar
+      <Link href="/" className="text-sm font-medium text-ink-faint hover:text-ink">
+        ← Radar
       </Link>
 
       <DataSourceBanner source={source} />
