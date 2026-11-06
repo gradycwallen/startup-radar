@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const LINKS = [
   { href: "/", label: "Radar" },
@@ -13,7 +14,10 @@ export function SiteFooter() {
     <footer className="mt-24 border-t border-line">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-14 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-serif text-2xl tracking-tight text-ink">Startup Radar</p>
+          <Link href="/" className="flex items-center gap-2 leading-none" aria-label="Startup Radar home">
+            <Image src="/startup-radar-mark.png" alt="" width={42} height={42} className="h-9 w-9 mix-blend-multiply dark:invert dark:mix-blend-screen sm:h-11 sm:w-11" />
+            <span className="text-lg font-bold tracking-tight text-ink sm:text-2xl">Startup Radar</span>
+          </Link>
           <p className="mt-2 max-w-xs text-sm text-ink-muted">Discovery intelligence for emerging startups, before they&rsquo;re obvious.</p>
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
