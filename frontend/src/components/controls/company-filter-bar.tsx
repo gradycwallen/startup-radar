@@ -59,7 +59,7 @@ function SelectField({
         onChange={(e) => onChange(e.target.value)}
         aria-label={ariaLabel}
         className={clsx(
-          "cursor-pointer appearance-none bg-transparent py-1 pr-5 text-left focus:outline-none",
+          "cursor-pointer appearance-none border-b border-transparent bg-transparent py-1 pr-5 text-left transition-colors hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent",
           emphasized ? "font-medium text-ink" : "text-ink-muted hover:text-ink",
         )}
       >
@@ -124,7 +124,7 @@ export function CompanyFilterBar({ initial, categories, eventTypes, variant = "f
             onChange={(e) => setQ(e.target.value)}
             placeholder={searchPlaceholder}
             aria-label="Search companies"
-            className="w-full border-b border-line bg-transparent py-2 pl-6 text-[15px] text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none"
+            className="w-full border-b border-line bg-transparent py-2 pl-6 text-[15px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
           />
         </div>
 

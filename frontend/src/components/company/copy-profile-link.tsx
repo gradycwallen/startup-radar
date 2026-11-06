@@ -12,5 +12,5 @@ export function CopyProfileLink() {
       setMessage("Unable to copy. Please copy the address from your browser.");
     }
   }
-  return <div className="flex flex-wrap items-center gap-3"><button type="button" onClick={copy} className="border border-line-strong px-3 py-2 text-xs font-semibold text-ink hover:border-accent">Copy profile link</button><span role="status" className="text-xs text-ink-muted">{message}</span></div>;
+  return <div className="flex flex-wrap items-center gap-3"><button type="button" onClick={copy} className="border border-line-strong px-3 py-2 text-xs font-semibold text-ink transition-colors hover:border-accent hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">Copy profile link</button><span role="status" className="text-xs text-ink-muted">{message}</span></div>;
 }
