@@ -11,6 +11,8 @@ import { CompanyLogo } from "@/components/ui/company-logo";
 import { categoryLabelClasses } from "@/lib/derive/category-color";
 import { formatDate, recencyLabel } from "@/lib/derive/recency";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { ResearchBrief } from "@/components/company/research-brief";
+import { CopyProfileLink } from "@/components/company/copy-profile-link";
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
@@ -48,7 +50,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
           <CompanyLogo domain={company.domain} name={company.name} size={56} />
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-serif text-4xl tracking-tight text-ink sm:text-5xl">{company.name}</h1>
+              <h1 className="text-4xl font-bold tracking-tight text-ink sm:text-5xl">{company.name}</h1>
               {company.category ? <span className={categoryLabelClasses()}>{company.category}</span> : null}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-muted">
@@ -60,15 +62,17 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
             </div>
           </div>
         </div>
-        <ConfidenceBadge confidence={company.confidence} />
+        <div className="flex flex-col items-start gap-4 sm:items-end"><ConfidenceBadge confidence={company.confidence} /><CopyProfileLink /></div>
       </header>
 
-      {company.description ? <p className="mt-8 max-w-2xl text-lg leading-relaxed text-ink-muted">{company.description}</p> : null}
+      <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-16">
+      <div>
+      {company.description ? <p className="max-w-2xl text-lg leading-relaxed text-ink-muted">{company.description}</p> : null}
 
       {company.discoveryReason ? (
         <div className="mt-8 max-w-2xl border-l-2 border-accent/50 pl-5">
           <Eyebrow>Why it&rsquo;s on the radar</Eyebrow>
-          <p className="mt-2 font-serif text-xl leading-snug text-ink">{company.discoveryReason}</p>
+          <p className="mt-2 text-xl font-medium leading-snug text-ink">{company.discoveryReason}</p>
           {company.discoverySource ? (
             <p className="mt-2.5 text-xs text-ink-muted">
               Original discovery source: {company.discoveryUrl ? (
@@ -88,12 +92,15 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
       <SignalIntelligenceSection intelligence={intelligence} />
 
       <section className="mt-14 max-w-3xl">
-        <h2 className="font-serif text-2xl text-ink">Discovery timeline</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-ink">Discovery timeline</h2>
         <p className="mt-1.5 text-sm text-ink-muted">Every event Startup Radar has recorded for {company.name}, most recent first.</p>
         <div className="mt-6">
           <EvidenceTimeline events={company.events} />
         </div>
       </section>
+      </div>
+      <div><ResearchBrief company={company} intelligence={intelligence} /></div>
+      </div>
     </main>
   );
 }

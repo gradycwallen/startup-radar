@@ -17,10 +17,11 @@ import { TransitionSignalCard } from "./transition-signal-card";
  *   C. one or more signals fired     -> the real card list (grouped by family only when 2+ exist).
  */
 export function SignalIntelligenceSection({ intelligence }: { intelligence: SignalIntelligence }) {
+  if (intelligence.unavailable) return <section className="mt-14 max-w-3xl"><h2 className="text-2xl font-bold tracking-tight">Signal intelligence</h2><p className="mt-2 text-sm text-ink-muted">Signal history is temporarily unavailable. Please try again later.</p></section>;
   if (intelligence.sources.length === 0) {
     return (
       <section className="mt-14 max-w-3xl">
-        <h2 className="font-serif text-2xl text-ink">Signal Intelligence</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-ink">Signal intelligence</h2>
         <p className="mt-1.5 text-sm text-ink-muted">{SIGNAL_EMPTY_STATE_COPY.noSources}</p>
       </section>
     );
@@ -31,7 +32,7 @@ export function SignalIntelligenceSection({ intelligence }: { intelligence: Sign
 
   return (
     <section className="mt-14 max-w-3xl">
-      <h2 className="font-serif text-2xl text-ink">Signal Intelligence</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-ink">Signal intelligence</h2>
       <p className="mt-1.5 text-sm text-ink-muted">Deterministic signals Startup Radar has derived from hiring, GitHub and website activity — never inferred, never scored.</p>
       <CoverageLine text={coverageText} />
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CompanyWithEvents } from "@/lib/data/types";
 import { recencyLabel } from "@/lib/derive/recency";
 import { CompanyLogo } from "@/components/ui/company-logo";
+import { eventTypeMeta } from "@/lib/derive/event-type";
 
 export function CompanyCard({ company, index }: { company: CompanyWithEvents; index: number }) {
   const evidence = company.events[0]?.headline ?? company.discoveryReason ?? company.description;
@@ -13,7 +14,7 @@ export function CompanyCard({ company, index }: { company: CompanyWithEvents; in
         <div className="min-w-0"><h3 className="truncate text-lg font-bold tracking-tight group-hover:text-accent">{company.name}</h3><p className="truncate text-xs text-ink-faint">{company.domain}</p></div>
       </div>
       <span className="text-sm text-ink-muted">{company.category ?? "Uncategorized"}</span>
-      <p className="line-clamp-2 text-sm leading-relaxed text-ink-muted">{evidence ?? "Evidence available on company profile."}</p>
+      <div><p className="line-clamp-2 text-sm leading-relaxed text-ink-muted">{evidence ?? "Evidence available on company profile."}</p>{company.events[0] && <p className="mt-1 text-xs text-ink-faint"><span className="font-semibold text-accent">{eventTypeMeta(company.events[0].eventType).short}</span>{company.events[0].sourceName ? ` · ${company.events[0].sourceName}` : ""}</p>}</div>
       <span className="font-mono text-xs text-ink-faint sm:text-right">{recencyLabel(company.discoveredAt)}</span>
     </Link>
   );

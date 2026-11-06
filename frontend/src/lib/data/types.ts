@@ -133,4 +133,5 @@ export interface SignalIntelligence {
   sources: SignalSource[];
   observations: SignalObservation[];
   signals: DerivedSignal[];
+  unavailable?: boolean;
 }

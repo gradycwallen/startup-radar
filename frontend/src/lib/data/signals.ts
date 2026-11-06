@@ -83,20 +83,26 @@ export const getSignalIntelligenceForCompany = cache(async (companyId: number): 
   const client = getServerSupabaseClient();
   if (!client) return EMPTY;
 
-  const [sourcesRes, observationsRes, signalsRes] = await Promise.all([
-    client.from("signal_sources").select("id, company_id, source_type, external_id, canonical_url, resolution_method, active").eq("company_id", companyId).eq("active", true),
-    client.from("observations").select("id, company_id, signal_source_id, metric_name, numeric_value, text_value, observed_at, collection_version, metadata").eq("company_id", companyId),
-    client.from("signals").select("id, company_id, family, signal_type, window_days, from_observation_id, to_observation_id, from_value, to_value, delta, relative_change, explanation, fired_at, metadata").eq("company_id", companyId),
-  ]);
-
-  if (sourcesRes.error || observationsRes.error || signalsRes.error) {
-    console.error("[data/signals] Supabase read failed, returning empty Signal Intelligence:", sourcesRes.error ?? observationsRes.error ?? signalsRes.error);
-    return EMPTY;
+  async function readPages(table: string, columns: string, activeOnly = false) {
+    const rows: unknown[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      let query = client!.from(table).select(columns).eq("company_id", companyId);
+      if (activeOnly) query = query.eq("active", true);
+      const { data, error } = await query.order("id").range(offset, offset + 999);
+      if (error) throw error;
+      rows.push(...(data ?? []));
+      if ((data?.length ?? 0) < 1000) return rows;
+    }
   }
-
-  return {
-    sources: ((sourcesRes.data ?? []) as SignalSourceRow[]).map(mapSource),
-    observations: ((observationsRes.data ?? []) as ObservationRow[]).map(mapObservation),
-    signals: ((signalsRes.data ?? []) as SignalRow[]).map(mapSignal),
-  };
+  try {
+    const [sources, observations, signals] = await Promise.all([
+      readPages("signal_sources", "id, company_id, source_type, external_id, canonical_url, resolution_method, active", true),
+      readPages("observations", "id, company_id, signal_source_id, metric_name, numeric_value, text_value, observed_at, collection_version, metadata"),
+      readPages("signals", "id, company_id, family, signal_type, window_days, from_observation_id, to_observation_id, from_value, to_value, delta, relative_change, explanation, fired_at, metadata"),
+    ]);
+    return { sources: (sources as SignalSourceRow[]).map(mapSource), observations: (observations as ObservationRow[]).map(mapObservation), signals: (signals as SignalRow[]).map(mapSignal) };
+  } catch (error) {
+    console.error("[data/signals] Supabase read failed:", error);
+    return { ...EMPTY, unavailable: true };
+  }
 });

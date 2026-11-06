@@ -7,12 +7,13 @@ import clsx from "clsx";
 const LINKS = [
   { href: "/", label: "Radar" },
   { href: "/explore", label: "Explore" },
+  { href: "/about", label: "About" },
 ] as const;
 
 export function NavLinks() {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-5">
+    <nav aria-label="Main navigation" className="flex items-center gap-3 sm:gap-5">
       {LINKS.map((link) => {
         const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
         return (
