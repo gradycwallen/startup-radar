@@ -5,6 +5,7 @@ import { DataSourceBanner } from "@/components/ui/data-source-banner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HomeIntro } from "@/components/intro/home-intro";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { CountUp } from "@/components/ui/count-up";
 import { distinctCategories, distinctEventTypes, filterCompanies, parseFilters } from "@/lib/filters";
 import { daysSince } from "@/lib/derive/recency";
 
@@ -29,7 +30,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
           (company-card.tsx) spreads its own content across this width via justify-between rather
           than leaving it centered in a too-narrow tube. */}
       <main className="mx-auto max-w-7xl px-6 py-10 sm:px-8 sm:py-16">
-        <div className="max-w-2xl">
+        <div className="stagger max-w-2xl">
           <Eyebrow>The Radar</Eyebrow>
           <h1 className="mt-3 font-serif text-[2.75rem] leading-[1.03] tracking-tight text-ink sm:text-6xl">
             Recently discovered startups
@@ -47,15 +48,15 @@ export default async function RadarPage({ searchParams }: PageProps<"/">) {
         <dl className="mt-14 flex flex-wrap gap-x-12 gap-y-5 border-t border-line pt-7">
           <div>
             <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">Companies tracked</dt>
-            <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl">{companies.length}</dd>
+            <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl"><CountUp value={companies.length} /></dd>
           </div>
           <div>
             <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">New this week</dt>
-            <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl">{newThisWeek}</dd>
+            <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl"><CountUp value={newThisWeek} /></dd>
           </div>
           <div>
             <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-faint">Categories</dt>
-            <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl">{categoryCount}</dd>
+            <dd className="tabular mt-2 font-mono text-4xl text-ink sm:text-5xl"><CountUp value={categoryCount} /></dd>
           </div>
         </dl>
 

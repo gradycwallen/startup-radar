@@ -20,8 +20,9 @@ export function NavLinks() {
             key={link.href}
             href={link.href}
             className={clsx(
-              "border-b-2 py-1.5 text-sm font-medium transition-colors",
-              active ? "border-accent text-ink" : "border-transparent text-ink-muted hover:text-ink",
+              "relative py-1.5 text-sm font-medium transition-colors duration-200",
+              "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:origin-left after:rounded-full after:transition-transform after:duration-300 after:ease-[var(--ease-out)]",
+              active ? "text-ink after:scale-x-100 after:bg-accent" : "text-ink-muted after:scale-x-0 after:bg-ink-faint hover:text-ink hover:after:scale-x-100",
             )}
           >
             {link.label}

@@ -53,15 +53,17 @@ export function HomeIntro({ totalCount }: { totalCount: number }) {
     <div ref={wrapperRef} className="relative h-[200svh]">
       <div
         ref={panelRef}
-        className="sticky top-16 flex h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden bg-[#06080b] px-6 text-center sm:top-20 sm:h-[calc(100svh-5rem)]"
+        className="sticky top-24 flex h-[calc(100svh-6rem)] flex-col items-center justify-center overflow-hidden bg-[#06080b] px-6 text-center sm:top-28 sm:h-[calc(100svh-7rem)]"
       >
         <MatrixField />
+        {/* Soft vignette behind the copy so a passing ripple or the glow never fights the headline. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_42%_34%_at_center,rgba(6,8,11,0.82),rgba(6,8,11,0.4)_60%,transparent_100%)]" />
 
         {/* pointer-events-none: nothing in here is interactive, and without this the text's own
             box (wider than it looks, since the flex column sizes to its content) was stealing
             pointermove events the canvas needs — found in review as a dead zone where the
             brightening effect silently stopped following the cursor under the copy. */}
-        <div className="pointer-events-none relative z-10 max-w-xl">
+        <div className="stagger pointer-events-none relative z-10 max-w-xl">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8fd8ff]">Startup Radar</p>
           <p className="mt-4 font-serif text-5xl leading-[1.05] tracking-tight text-white sm:text-7xl">
             Startups, found

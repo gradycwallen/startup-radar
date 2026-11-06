@@ -20,7 +20,7 @@ export function CompanyCard({ company }: { company: CompanyWithEvents }) {
   return (
     <Link
       href={`/companies/${company.id}`}
-      className="group -mx-6 block px-6 py-6 transition-colors hover:bg-line/25 sm:-mx-8 sm:px-8"
+      className="reveal group relative -mx-6 block px-6 py-6 transition-colors duration-300 before:absolute before:inset-y-5 before:left-0 before:w-0.5 before:origin-top before:scale-y-0 before:rounded-full before:bg-accent before:transition-transform before:duration-300 before:ease-[var(--ease-out)] hover:bg-line/30 hover:before:scale-y-100 sm:-mx-8 sm:px-8"
     >
       {/* No flex-wrap here on purpose: with wrap allowed, a long name/description could push the
           confidence badge onto its own line, where it lands left-aligned instead of pinned top-
@@ -31,7 +31,7 @@ export function CompanyCard({ company }: { company: CompanyWithEvents }) {
           <CompanyLogo domain={company.domain} name={company.name} size={40} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-              <h3 className="truncate font-serif text-xl text-ink group-hover:text-accent">{company.name}</h3>
+              <h3 className="truncate font-serif text-xl text-ink transition-colors duration-200 group-hover:text-accent">{company.name}</h3>
               <span className="shrink-0 font-mono text-xs text-ink-faint">{company.domain}</span>
             </div>
             {company.description ? <p className="mt-1 line-clamp-2 max-w-4xl text-sm text-ink-muted">{company.description}</p> : null}

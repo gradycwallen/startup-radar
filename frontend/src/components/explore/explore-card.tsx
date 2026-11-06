@@ -14,13 +14,13 @@ export function ExploreCard({ company }: { company: CompanyWithEvents }) {
   return (
     <Link
       href={`/companies/${company.id}`}
-      className="group flex h-full flex-col rounded-lg border border-line bg-surface p-4 transition-colors hover:border-accent/40"
+      className="reveal group flex h-full flex-col rounded-lg border border-line bg-surface p-4 transition-[border-color,transform,box-shadow] duration-300 ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[0_12px_32px_-16px_color-mix(in_srgb,var(--color-accent)_35%,transparent)]"
     >
       <div className="flex items-start gap-2.5">
         <CompanyLogo domain={company.domain} name={company.name} size={28} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="truncate font-serif text-base text-ink group-hover:text-accent">{company.name}</h3>
+            <h3 className="truncate font-serif text-base text-ink transition-colors duration-200 group-hover:text-accent">{company.name}</h3>
             <span className="shrink-0 font-mono text-[11px] text-ink-faint">{recencyLabel(company.discoveredAt)}</span>
           </div>
           <p className="truncate text-xs text-ink-faint">{company.domain}</p>

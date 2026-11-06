@@ -106,6 +106,76 @@ body {
   animation: matrix-caret-blink 1s step-end infinite;
 }
 
+/* ---- Motion -------------------------------------------------------------------------------
+ * One easing curve and two durations for the whole site, so every movement feels like the same
+ * hand made it. Everything below is switched off under prefers-reduced-motion (end of file). */
+:root {
+  --ease-out: cubic-bezier(0.22, 0.75, 0.2, 1);
+}
+
+/* Page intros: children rise in one after another. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.stagger > * {
+  animation: rise 0.7s var(--ease-out) both;
+}
+.stagger > :nth-child(2) {
+  animation-delay: 0.08s;
+}
+.stagger > :nth-child(3) {
+  animation-delay: 0.16s;
+}
+.stagger > :nth-child(n + 4) {
+  animation-delay: 0.24s;
+}
+
+/* Feed rows and cards fade up as they scroll into view. CSS scroll-driven animation only — where
+ * a browser doesn't support it, content simply shows, with nothing hidden waiting for JS. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 60%;
+  }
+}
+
+/* Masthead ticker (components/layout/signal-ticker.tsx). */
+@keyframes ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track {
+  animation: ticker 80s linear infinite;
+}
+.ticker:hover .ticker-track,
+.ticker:focus-within .ticker-track {
+  animation-play-state: paused;
+}
+.ticker-mask {
+  mask-image: linear-gradient(to right, transparent, #000 4%, #000 92%, transparent);
+}
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+.live-dot {
+  animation: live-pulse 2s var(--ease-out) infinite;
+}
+
 /* Faint dot grid behind page content — a static echo of the hero's character field. */
 .grid-backdrop {
   background-image: radial-gradient(color-mix(in srgb, var(--color-ink-faint) 22%, transparent) 1px, transparent 1px);
@@ -114,7 +184,16 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .scroll-cue,
-  .matrix-caret {
+  .matrix-caret,
+  .stagger > *,
+  .reveal,
+  .live-dot {
     animation: none;
+  }
+  .ticker-track {
+    animation: none;
+  }
+  .ticker-mask {
+    overflow-x: auto;
   }
 }

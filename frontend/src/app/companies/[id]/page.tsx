@@ -43,7 +43,7 @@ export default async function CompanyDetailPage({ params }: PageProps<"/companie
 
       <DataSourceBanner source={source} />
 
-      <header className="mt-6 flex flex-wrap items-start justify-between gap-4 border-b border-line pb-8">
+      <header className="stagger mt-6 flex flex-wrap items-start justify-between gap-4 border-b border-line pb-8">
         <div className="flex gap-5">
           <CompanyLogo domain={company.domain} name={company.name} size={56} />
           <div>

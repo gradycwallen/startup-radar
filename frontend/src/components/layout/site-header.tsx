@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { NavLinks } from "./nav-links";
 import { ThemeToggle } from "./theme-toggle";
+import { SignalTicker } from "./signal-ticker";
 
 export function SiteHeader() {
+  // Header height is 4rem/5rem plus the ticker's 2rem — HomeIntro's sticky offset depends on it.
   return (
     // A solid canvas ground (no backdrop-blur) with a hairline rule — the terminal hero sits right
     // under it on the homepage, so the masthead reads as the window chrome above that screen.
@@ -20,6 +22,7 @@ export function SiteHeader() {
           <ThemeToggle />
         </div>
       </div>
+      <SignalTicker />
     </header>
   );
 }
