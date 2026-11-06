@@ -19,6 +19,9 @@ function fakeStore(initial: { sources?: SignalSource[]; observations?: Observati
     async getActiveSourcesForCompanies(ids) {
       return sources.filter((s) => (ids as readonly number[]).includes(s.company_id) && s.active);
     },
+    async getExcludedSourceIdsForCompanies(ids) {
+      return sources.filter((s) => (ids as readonly number[]).includes(s.company_id) && s.metadata?.history_excluded === true).map((s) => s.id!);
+    },
     async getObservationHistoryForCompanies(ids) {
       return observations.filter((o) => (ids as readonly number[]).includes(o.company_id));
     },
@@ -396,4 +399,27 @@ test("orchestrate: an already-aborted signal stops the run before processing any
   assert.deepEqual(requested, []);
   assert.equal(calls.upsertSignalSource + calls.insertObservations + calls.insertSignals, 0);
   assert.ok(log.records.some((r) => r.event === "observation_pass_aborted"));
+});
+
+test("invalidated source history cannot create a false change for its replacement", async () => {
+  const oldSource = acmeGithubSource({ id: 501, source_type: "greenhouse", active: false, metadata: { history_excluded: true } });
+  const newSource = acmeGithubSource({ id: 502, source_type: "greenhouse", external_id: "acme-new" });
+  const oldReading: Observation = { id: 1, company_id: 1, signal_source_id: 501, metric_name: "ats_open_jobs_total", numeric_value: 2, text_value: null, observed_at: new Date(NOW().getTime() - 30 * 86_400_000).toISOString(), source_timestamp: null, collection_version: "ats-v1", raw_payload_ref: null };
+  const newReading: Observation = { ...oldReading, id: 2, signal_source_id: 502, numeric_value: 14, observed_at: new Date(NOW().getTime() - 3600_000).toISOString() };
+  const { store, signals } = fakeStore({ sources: [oldSource, newSource, acmeWebsiteSource()], observations: [oldReading, newReading, freshWebsiteOutcomeObs(1, 601, NOW())] });
+  const { fetcher } = fakeFetcher({});
+  await runObservationPass([ACME], { fetcher, store, now: NOW }, { dryRun: false, force: false });
+  assert.equal(signals.some((signal) => signal.signal_type === "open_jobs_increase" || signal.signal_type === "open_jobs_surge"), false);
+  assert.equal(signals.some((signal) => signal.signal_type === "high_hiring_present_at_first_observation"), true);
+});
+
+test("ordinary inactive source history remains available for genuine longitudinal comparisons", async () => {
+  const oldSource = acmeGithubSource({ id: 501, source_type: "greenhouse", active: false });
+  const newSource = acmeGithubSource({ id: 502, source_type: "greenhouse", external_id: "acme-new" });
+  const oldReading: Observation = { id: 1, company_id: 1, signal_source_id: 501, metric_name: "ats_open_jobs_total", numeric_value: 2, text_value: null, observed_at: new Date(NOW().getTime() - 30 * 86_400_000).toISOString(), source_timestamp: null, collection_version: "ats-v1", raw_payload_ref: null };
+  const newReading: Observation = { ...oldReading, id: 2, signal_source_id: 502, numeric_value: 14, observed_at: new Date(NOW().getTime() - 3600_000).toISOString() };
+  const { store, signals } = fakeStore({ sources: [oldSource, newSource, acmeWebsiteSource()], observations: [oldReading, newReading, freshWebsiteOutcomeObs(1, 601, NOW())] });
+  const { fetcher } = fakeFetcher({});
+  await runObservationPass([ACME], { fetcher, store, now: NOW }, { dryRun: false, force: false });
+  assert.equal(signals.some((signal) => signal.signal_type === "open_jobs_surge"), true);
 });

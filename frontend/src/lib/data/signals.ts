@@ -27,6 +27,7 @@ interface SignalSourceRow {
   canonical_url: string | null;
   resolution_method: string;
   active: boolean;
+  metadata: Record<string, unknown> | null;
 }
 
 interface ObservationRow {
@@ -96,11 +97,19 @@ export const getSignalIntelligenceForCompany = cache(async (companyId: number): 
   }
   try {
     const [sources, observations, signals] = await Promise.all([
-      readPages("signal_sources", "id, company_id, source_type, external_id, canonical_url, resolution_method, active", true),
+      readPages("signal_sources", "id, company_id, source_type, external_id, canonical_url, resolution_method, active, metadata"),
       readPages("observations", "id, company_id, signal_source_id, metric_name, numeric_value, text_value, observed_at, collection_version, metadata"),
       readPages("signals", "id, company_id, family, signal_type, window_days, from_observation_id, to_observation_id, from_value, to_value, delta, relative_change, explanation, fired_at, metadata"),
     ]);
-    return { sources: (sources as SignalSourceRow[]).map(mapSource), observations: (observations as ObservationRow[]).map(mapObservation), signals: (signals as SignalRow[]).map(mapSignal) };
+    const sourceRows = sources as SignalSourceRow[];
+    const excludedIds = new Set(sourceRows.filter((source) => source.metadata?.history_excluded === true).map((source) => source.id));
+    const observationRows = observations as ObservationRow[];
+    const excludedObservationIds = new Set(observationRows.filter((observation) => excludedIds.has(observation.signal_source_id)).map((observation) => observation.id));
+    return {
+      sources: sourceRows.filter((source) => source.active).map(mapSource),
+      observations: observationRows.filter((observation) => !excludedIds.has(observation.signal_source_id)).map(mapObservation),
+      signals: (signals as SignalRow[]).filter((signal) => !excludedObservationIds.has(signal.to_observation_id!) && !excludedObservationIds.has(signal.from_observation_id!)).map(mapSignal),
+    };
   } catch (error) {
     console.error("[data/signals] Supabase read failed:", error);
     return { ...EMPTY, unavailable: true };

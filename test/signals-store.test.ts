@@ -151,3 +151,12 @@ test("SignalStore writes: a single failed attempt is NOT retried (writes lack an
   await assert.rejects(() => store.insertObservations([{ company_id: 1, signal_source_id: 1, metric_name: "x", numeric_value: 1, text_value: null, observed_at: "2026-09-22T00:00:00Z", source_timestamp: null, collection_version: "v1", raw_payload_ref: null }]));
   assert.equal(captured.length, 1, "a write is attempted exactly once, never retried");
 });
+
+test("SignalStore reads only explicitly excluded source ids", async () => {
+  const captured: Captured[] = [];
+  const store = new SignalStore("https://x.supabase.co", "k", { fetch: fakeSupabaseFetch(captured, [{ id: 82 }], 200) });
+  assert.deepEqual(await store.getExcludedSourceIdsForCompanies([57]), [82]);
+  const url = new URL(captured[0]!.url);
+  assert.equal(url.searchParams.get("metadata->>history_excluded"), "eq.true");
+  assert.equal(url.searchParams.get("company_id"), "in.(57)");
+});

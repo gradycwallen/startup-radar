@@ -201,6 +201,25 @@ export class SignalStore {
     return out;
   }
 
+  /** Source records marked as invalid identity matches. Their rows remain stored for audit, but
+   * must not be used to derive new signals; ordinary inactive sources retain valid history. */
+  async getExcludedSourceIdsForCompanies(companyIds: readonly number[]): Promise<number[]> {
+    if (companyIds.length === 0) return [];
+    const ids: number[] = [];
+    for (let offset = 0; ; offset += SignalStore.PAGE_SIZE) {
+      const page = await this.#readWithRetry(`getExcludedSourceIdsForCompanies[offset=${offset}]`, async (signal) => {
+        const { data, error } = await this.#client.from("signal_sources").select("id")
+          .in("company_id", companyIds as number[]).eq("metadata->>history_excluded", "true")
+          .order("id", { ascending: true }).range(offset, offset + SignalStore.PAGE_SIZE - 1).abortSignal(signal);
+        if (error) throw new Error(`getExcludedSourceIdsForCompanies: ${error.message}`);
+        return data ?? [];
+      });
+      ids.push(...page.map((source) => source.id as number));
+      if (page.length < SignalStore.PAGE_SIZE) break;
+    }
+    return ids;
+  }
+
   /** ALL observations for the given companies. This is the ONLY place observation history is
    * read, so freshness checks and signal derivation both see the exact same data — which is
    * exactly why it has to be the COMPLETE history, paginated, not whatever a single unbounded

@@ -221,7 +221,9 @@ export function extractHeadline(title: string, excerpt: string): HeadlineExtract
   const name = cleanSubject(title.slice(0, hit.index));
   if (!name) return { drop: "no_company_subject" };
   const context = `${title}. ${excerpt.slice(0, 500)}`;
-  const round = parseRound(title) ?? parseRound(excerpt.slice(0, 300));
+  // An excerpt may mention an older round (or another company) alongside the current raise.
+  // Only classify the current round when the headline explicitly names it.
+  const round = parseRound(title);
   const amount = parseAmount(title).usd !== null || parseAmount(title).text ? parseAmount(title) : parseAmount(excerpt.slice(0, 300));
   const patterns = [hit.pattern];
   if (parseAmount(title).text) patterns.push("amount_in_title");

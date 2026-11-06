@@ -27,6 +27,7 @@ import type { CompanyContext, DerivedSignal, Observation, SignalSource } from ".
  * instead of a real (or fetch-mocked) Supabase client. `SignalStore` satisfies this structurally. */
 export interface SignalDataAccess {
   getActiveSourcesForCompanies(companyIds: readonly number[]): Promise<SignalSource[]>;
+  getExcludedSourceIdsForCompanies(companyIds: readonly number[]): Promise<number[]>;
   getObservationHistoryForCompanies(companyIds: readonly number[]): Promise<Observation[]>;
   getSignalsForCompanies(companyIds: readonly number[]): Promise<DerivedSignal[]>;
   upsertSignalSource(source: Omit<SignalSource, "id">): Promise<SignalSource>;
@@ -116,11 +117,14 @@ export async function runObservationPass(companies: readonly CompanyContext[], d
   const log = deps.log;
 
   const companyIds = companies.map((c) => c.id);
-  const [existingSources, existingHistory, existingSignals] = await Promise.all([
+  const [existingSources, existingHistory, existingSignals, excludedSourceIds] = await Promise.all([
     deps.store.getActiveSourcesForCompanies(companyIds),
     deps.store.getObservationHistoryForCompanies(companyIds),
     deps.store.getSignalsForCompanies(companyIds),
+    deps.store.getExcludedSourceIdsForCompanies(companyIds),
   ]);
+  const excludedSources = new Set(excludedSourceIds);
+  const excludedObservationIds = new Set(existingHistory.filter((observation) => excludedSources.has(observation.signal_source_id)).map((observation) => observation.id));
   const knownSignalKeys = signalKeySet(existingSignals);
   const sourcesByCompany = new Map<number, SignalSource[]>();
   for (const s of existingSources) sourcesByCompany.set(s.company_id, [...(sourcesByCompany.get(s.company_id) ?? []), s]);
@@ -230,12 +234,13 @@ export async function runObservationPass(companies: readonly CompanyContext[], d
         }
       }
 
-      // Derive signals from the full (existing + newly collected) history, deterministic rules only.
+      // Preserve ordinary retired-source history; exclude only explicitly invalidated sources.
+      const eligibleHistory = companyHistory.filter((observation) => !excludedSources.has(observation.signal_source_id));
       // existingSignals (this company's slice) is what lets the velocity rules in rules/hiring.ts
       // /rules/github.ts recognize "we already reported this exact value" and stay silent instead
       // of re-firing it — see format.ts: alreadyReportedValue.
-      const companySignals = existingSignals.filter((s) => s.company_id === company.id);
-      const derived = deriveSignalsForCompany(company.id, companyHistory, now(), companySignals);
+      const companySignals = existingSignals.filter((s) => s.company_id === company.id && !excludedObservationIds.has(s.to_observation_id) && !excludedObservationIds.has(s.from_observation_id));
+      const derived = deriveSignalsForCompany(company.id, eligibleHistory, now(), companySignals);
       const newSignals = derived.filter((s) => !knownSignalKeys.has(`${s.company_id}:${s.signal_type}:${s.to_observation_id}`));
       if (newSignals.length > 0) {
         if (!options.dryRun) await deps.store.insertSignals(newSignals);

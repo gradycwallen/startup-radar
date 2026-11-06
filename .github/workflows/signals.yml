@@ -35,7 +35,9 @@ concurrency:
 jobs:
   observe:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The pass is serial and now covers hundreds of companies; 15 minutes repeatedly killed
+    # it mid-pass. Keep a hard deadline while allowing time for a full daily pass.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
