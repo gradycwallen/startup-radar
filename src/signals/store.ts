@@ -95,6 +95,20 @@ export class SignalStore {
     throw lastErr instanceof Error ? lastErr : new Error(`${op} failed after ${attempts} attempts`);
   }
 
+  /** PostgREST (Supabase's query layer) silently caps an unbounded `.select()` at a server-side
+   * row limit (commonly 1000) — a `.select()` with no `.range()` does NOT throw or warn when a
+   * table has more rows than that, it just returns a partial, arbitrarily-ordered slice. This was
+   * found as the root cause of a real production bug: once `observations` grew past that cap, the
+   * same signal (e.g. "contributor count grew from 6 to 8") re-fired on many separate days,
+   * because each day's orchestrator run saw a DIFFERENT partial slice of a company's history
+   * (sometimes missing the observation that would have shown the transition had already been
+   * reported), rather than the complete, stable history every rule in rules/*.ts assumes it's
+   * getting. The three read methods below now page through `.range()` (with an explicit
+   * `.order("id")` — range-based pagination is only correct with a deterministic order) until a
+   * page comes back short, which is the only way to be sure ALL matching rows were fetched
+   * regardless of table size. */
+  static readonly PAGE_SIZE = 1000;
+
   /** Insert-or-return-existing on the (company_id, source_type, external_id) natural key — a
    * source is never rediscovered as a duplicate row; resolving it again just confirms it. */
   async upsertSignalSource(source: Omit<SignalSource, "id">): Promise<SignalSource> {
@@ -162,38 +176,81 @@ export class SignalStore {
   // ---- reads (SELECT only — orchestration needs these to decide what to resolve/collect/derive) ----
 
   /** Every ACTIVE signal source for the given companies. Used to know what's already resolved,
-   * so resolution is only attempted for companies that genuinely have none yet. */
+   * so resolution is only attempted for companies that genuinely have none yet. Paginated (see the
+   * note above `PAGE_SIZE`) — this table is small today, but nothing here should ever again rely
+   * on "small today" staying true without enforcing it. */
   async getActiveSourcesForCompanies(companyIds: readonly number[]): Promise<SignalSource[]> {
     if (companyIds.length === 0) return [];
-    return this.#readWithRetry("getActiveSourcesForCompanies", async (signal) => {
-      const { data, error } = await this.#client.from("signal_sources").select().in("company_id", companyIds as number[]).eq("active", true).abortSignal(signal);
-      if (error) throw new Error(`getActiveSourcesForCompanies: ${error.message}`);
-      return (data ?? []) as SignalSource[];
-    });
+    const out: SignalSource[] = [];
+    for (let offset = 0; ; offset += SignalStore.PAGE_SIZE) {
+      const page = await this.#readWithRetry(`getActiveSourcesForCompanies[offset=${offset}]`, async (signal) => {
+        const { data, error } = await this.#client
+          .from("signal_sources")
+          .select()
+          .in("company_id", companyIds as number[])
+          .eq("active", true)
+          .order("id", { ascending: true })
+          .range(offset, offset + SignalStore.PAGE_SIZE - 1)
+          .abortSignal(signal);
+        if (error) throw new Error(`getActiveSourcesForCompanies: ${error.message}`);
+        return (data ?? []) as SignalSource[];
+      });
+      out.push(...page);
+      if (page.length < SignalStore.PAGE_SIZE) break;
+    }
+    return out;
   }
 
-  /** ALL observations for the given companies — at Startup Radar's current scale (a handful of
-   * companies, a few metrics each) this is cheap; revisit with a bounded time window if the table
-   * grows large enough for that to change. This is the ONLY place observation history is read, so
-   * freshness checks and signal derivation both see the exact same data. */
+  /** ALL observations for the given companies. This is the ONLY place observation history is
+   * read, so freshness checks and signal derivation both see the exact same data — which is
+   * exactly why it has to be the COMPLETE history, paginated, not whatever a single unbounded
+   * `.select()` happens to return once the table outgrows PostgREST's default row cap (see the
+   * note above `PAGE_SIZE` — this was a real, live bug, not a hypothetical). */
   async getObservationHistoryForCompanies(companyIds: readonly number[]): Promise<Observation[]> {
     if (companyIds.length === 0) return [];
-    return this.#readWithRetry("getObservationHistoryForCompanies", async (signal) => {
-      const { data, error } = await this.#client.from("observations").select().in("company_id", companyIds as number[]).abortSignal(signal);
-      if (error) throw new Error(`getObservationHistoryForCompanies: ${error.message}`);
-      return (data ?? []) as Observation[];
-    });
+    const out: Observation[] = [];
+    for (let offset = 0; ; offset += SignalStore.PAGE_SIZE) {
+      const page = await this.#readWithRetry(`getObservationHistoryForCompanies[offset=${offset}]`, async (signal) => {
+        const { data, error } = await this.#client
+          .from("observations")
+          .select()
+          .in("company_id", companyIds as number[])
+          .order("id", { ascending: true })
+          .range(offset, offset + SignalStore.PAGE_SIZE - 1)
+          .abortSignal(signal);
+        if (error) throw new Error(`getObservationHistoryForCompanies: ${error.message}`);
+        return (data ?? []) as Observation[];
+      });
+      out.push(...page);
+      if (page.length < SignalStore.PAGE_SIZE) break;
+    }
+    return out;
   }
 
-  /** Every already-persisted signal for the given companies — used only to build the
+  /** Every already-persisted signal for the given companies — used both to build the
    * (company_id, signal_type, to_observation_id) dedup key set before inserting newly-derived
-   * signals, so re-running the orchestrator against unchanged history never double-inserts. */
+   * signals, and (rules/*.ts) to check the last value already reported for a given signal type
+   * before firing a new one over the same unchanged value. Must be complete, paginated — a
+   * partial read here is exactly what let the same transition re-fire on separate days undetected
+   * (see the note above `PAGE_SIZE`). */
   async getSignalsForCompanies(companyIds: readonly number[]): Promise<DerivedSignal[]> {
     if (companyIds.length === 0) return [];
-    return this.#readWithRetry("getSignalsForCompanies", async (signal) => {
-      const { data, error } = await this.#client.from("signals").select().in("company_id", companyIds as number[]).abortSignal(signal);
-      if (error) throw new Error(`getSignalsForCompanies: ${error.message}`);
-      return (data ?? []) as DerivedSignal[];
-    });
+    const out: DerivedSignal[] = [];
+    for (let offset = 0; ; offset += SignalStore.PAGE_SIZE) {
+      const page = await this.#readWithRetry(`getSignalsForCompanies[offset=${offset}]`, async (signal) => {
+        const { data, error } = await this.#client
+          .from("signals")
+          .select()
+          .in("company_id", companyIds as number[])
+          .order("id", { ascending: true })
+          .range(offset, offset + SignalStore.PAGE_SIZE - 1)
+          .abortSignal(signal);
+        if (error) throw new Error(`getSignalsForCompanies: ${error.message}`);
+        return (data ?? []) as DerivedSignal[];
+      });
+      out.push(...page);
+      if (page.length < SignalStore.PAGE_SIZE) break;
+    }
+    return out;
   }
 }

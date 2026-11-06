@@ -231,7 +231,11 @@ export async function runObservationPass(companies: readonly CompanyContext[], d
       }
 
       // Derive signals from the full (existing + newly collected) history, deterministic rules only.
-      const derived = deriveSignalsForCompany(company.id, companyHistory, now());
+      // existingSignals (this company's slice) is what lets the velocity rules in rules/hiring.ts
+      // /rules/github.ts recognize "we already reported this exact value" and stay silent instead
+      // of re-firing it — see format.ts: alreadyReportedValue.
+      const companySignals = existingSignals.filter((s) => s.company_id === company.id);
+      const derived = deriveSignalsForCompany(company.id, companyHistory, now(), companySignals);
       const newSignals = derived.filter((s) => !knownSignalKeys.has(`${s.company_id}:${s.signal_type}:${s.to_observation_id}`));
       if (newSignals.length > 0) {
         if (!options.dryRun) await deps.store.insertSignals(newSignals);

@@ -8,6 +8,7 @@ import type { CollectedMetric, CollectionResult } from "./sources/types.ts";
 import { deriveGithubLevelSignals, deriveGithubSignals } from "./rules/github.ts";
 import { deriveHiringLevelSignals, deriveHiringSignals } from "./rules/hiring.ts";
 import { deriveWebsiteLevelSignals, deriveWebsiteTransitionSignals } from "./rules/website.ts";
+import type { ExistingSignalRef } from "./rules/format.ts";
 import type { DerivedSignal, Observation, SignalSource } from "./types.ts";
 
 /**
@@ -107,11 +108,18 @@ export async function backfillForSource(source: SignalSource, fetcher: Fetcher, 
  * `now` is explicit and injectable (defaults to `new Date()` only for callers that don't already
  * have one threaded through, e.g. ad-hoc tooling/tests) — orchestrate.ts always passes its own
  * `deps.now()` so the whole pass shares one consistent clock.
+ *
+ * `existingSignals` — this company's already-fired signals — is required for the two velocity-rule
+ * families (hiring/github): see rules/format.ts: alreadyReportedValue for why a window comparison
+ * needs it to avoid re-firing an unchanged transition on every subsequent run. The level and
+ * website-transition rules don't take it: each already fires at most once by construction (a
+ * `metricSeries(...).length === 1` gate, or `findFirstAppearance`'s own "never seen present
+ * earlier" check), so they need no additional history of what's already been reported.
  */
-export function deriveSignalsForCompany(companyId: number, history: readonly Observation[], now: Date = new Date()): Omit<DerivedSignal, "id">[] {
+export function deriveSignalsForCompany(companyId: number, history: readonly Observation[], now: Date = new Date(), existingSignals: readonly ExistingSignalRef[] = []): Omit<DerivedSignal, "id">[] {
   return [
-    ...deriveHiringSignals(companyId, history),
-    ...deriveGithubSignals(companyId, history),
+    ...deriveHiringSignals(companyId, history, existingSignals),
+    ...deriveGithubSignals(companyId, history, existingSignals),
     ...deriveHiringLevelSignals(companyId, history),
     ...deriveGithubLevelSignals(companyId, history, now),
     ...deriveWebsiteLevelSignals(companyId, history),

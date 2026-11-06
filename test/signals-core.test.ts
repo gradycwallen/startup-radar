@@ -124,3 +124,46 @@ test("metricSeries returns metric history sorted oldest-first, ignoring other me
   const series = metricSeries(SCENARIO_A, "github_stars");
   assert.deepEqual(series.map((o) => o.numeric_value), [100, 102, 103]);
 });
+
+// ---- regression: a window-based signal must not re-fire an unchanged value every run --------------------------------
+//
+// Found live in production: `bestAvailableWindow` always compares the LATEST observation against
+// the oldest one still inside the lookback window, so `to` is a fresh observation row every day
+// even when the metric's actual value hasn't moved — e.g. "contributors grew from 6 to 8" kept
+// re-firing on 14 separate days while the real count sat at 8 the whole time, because the
+// (company, signal_type, to_observation_id) dedup key alone can't recognize that as the same
+// already-reported transition (to_observation_id is different every day by construction). See
+// rules/format.ts: alreadyReportedValue / pushIfNew.
+
+const REGRESSION_COMPANY_ID = 9001;
+
+test("REGRESSION: an unchanged value does not re-fire contributor_growth on a later run, but a genuinely new value still does", () => {
+  // Day 0: contributors go 6 (30 days ago) -> 8 (today) — the real transition.
+  const historyDay0 = [
+    obs(REGRESSION_COMPANY_ID, 1, "github_contributors", 6, 30),
+    obs(REGRESSION_COMPANY_ID, 1, "github_contributors", 8, 0),
+  ];
+  const day0Signals = deriveSignalsForCompany(REGRESSION_COMPANY_ID, historyDay0);
+  const day0Growth = day0Signals.find((s) => s.signal_type === "contributor_growth");
+  assert.ok(day0Growth, "the real 6 -> 8 transition should fire once");
+  assert.equal(day0Growth!.to_value, 8);
+
+  // Day 1 (simulated): a fresh observation is appended with the SAME value (8) — exactly what the
+  // real daily collector does even when nothing changed. `existingSignals` now includes what fired
+  // on day 0. Without the fix, this would fire AGAIN with a new to_observation_id.
+  const historyDay1 = [...historyDay0, obs(REGRESSION_COMPANY_ID, 1, "github_contributors", 8, -1)];
+  const day1Signals = deriveSignalsForCompany(REGRESSION_COMPANY_ID, historyDay1, new Date(), day0Signals);
+  assert.ok(
+    !day1Signals.some((s) => s.signal_type === "contributor_growth"),
+    "the value hasn't changed since the last report — nothing new happened, so nothing should fire",
+  );
+
+  // Day 2 (simulated): a GENUINE further change (8 -> 11). This must still fire — the fix only
+  // suppresses re-reporting an UNCHANGED value, not all future signals of this type.
+  const existingAfterDay1 = [...day0Signals]; // day1 fired nothing new to add
+  const historyDay2 = [...historyDay1, obs(REGRESSION_COMPANY_ID, 1, "github_contributors", 11, -2)];
+  const day2Signals = deriveSignalsForCompany(REGRESSION_COMPANY_ID, historyDay2, new Date(), existingAfterDay1);
+  const day2Growth = day2Signals.find((s) => s.signal_type === "contributor_growth");
+  assert.ok(day2Growth, "a genuinely new value (11) must still fire, even with prior signals present");
+  assert.equal(day2Growth!.to_value, 11);
+});
