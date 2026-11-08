@@ -15,7 +15,8 @@
     "eval": "tsx src/eval/run-eval.ts",
     "signals": "tsx src/signals-main.ts",
     "discover": "tsx src/discover-main.ts",
-    "analyze:corroboration": "tsx src/analysis/corroboration-main.ts"
+    "analyze:corroboration": "tsx src/analysis/corroboration-main.ts",
+    "analyze:lead-time": "tsx src/analysis/lead-time-backtest-main.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",

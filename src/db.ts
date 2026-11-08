@@ -220,6 +220,36 @@ export class ReadOnlyDb implements CompanyReader {
     return companies.map((c) => ({ id: c.id, discoveredAt: c.discovered_at, hasFundingEvent: fundingCompanyIds.has(c.id) }));
   }
 
+  /**
+   * Every funding discovery_event's (company_id, event_date), nothing else — for
+   * src/analysis/lead-time-backtest.ts, which only needs to cluster dates per company. Filters by
+   * the given company ids to stay consistent with other narrow reads here, though in practice
+   * every known company id is always passed. Read-only, paged.
+   */
+  async getFundingEventDates(companyIds: readonly number[]): Promise<{ companyId: number; eventDate: string }[]> {
+    if (companyIds.length === 0) return [];
+    const page = 1000;
+    const out: { companyId: number; eventDate: string }[] = [];
+    for (let from = 0; ; from += page) {
+      const rows = await this.#read("lead_time:funding_events", async (signal) => {
+        const { data, error } = await this.#client
+          .from("discovery_events")
+          .select("company_id,event_date")
+          .eq("event_type", "funding")
+          .in("company_id", companyIds as number[])
+          .not("event_date", "is", null)
+          .order("id")
+          .range(from, from + page - 1)
+          .abortSignal(signal);
+        if (error) throw new Error(error.message);
+        return (data as { company_id: number; event_date: string }[] | null) ?? [];
+      });
+      out.push(...rows.map((r) => ({ companyId: r.company_id, eventDate: r.event_date })));
+      if (rows.length < page) break;
+    }
+    return out;
+  }
+
   async counts(): Promise<RowCounts> {
     const count = async (table: keyof RowCounts): Promise<number> =>
       this.#read(`count(${table})`, async (signal) => {

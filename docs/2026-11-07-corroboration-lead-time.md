@@ -72,3 +72,23 @@ article.
    extended to add new `discovery_events` to already-existing companies — a larger, write-path
    change that's out of scope here and needs its own explicit approval per `CLAUDE.md`'s
    non-negotiables.
+
+## The real backtest, built and run (also 2026-11-07)
+
+`src/analysis/lead-time-backtest.ts` / `npm run analyze:lead-time` is the actual predictive
+question from above: for a company with a genuinely *separate, later* funding round (not just
+several articles about the same raise — event dates are clustered with a 14-day gap threshold so
+same-week corroboration doesn't get mistaken for a second round), did a hiring/GitHub/website
+signal fire between the two, and how far in advance?
+
+Live result:
+
+```
+Companies with 2+ funding events on record:          128
+  ...clustering into 2+ genuinely separate rounds:   0
+```
+
+Zero companies cluster into a genuine second round — confirming, with a real general-purpose tool
+rather than a one-off query, that no qualifying pair exists yet. The tool is fully built and tested
+(`test/lead-time-backtest.test.ts`, 7 offline tests) and will report real numbers the moment either
+of the two conditions above is met — nothing further needs to be written when that happens.
