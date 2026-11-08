@@ -3,9 +3,11 @@
 /*
  * Design tokens for Startup Radar.
  *
- * Restrained neutral system (warm stone/zinc grays) with ONE intentional accent — amber, used
- * sparingly for signal/attention (active nav, primary actions, the strongest Momentum) rather
- * than as a general brand color. Light and dark are the SAME visual identity, not two
+ * Restrained neutral system (warm stone/zinc grays) with ONE intentional accent — a deep,
+ * institutional navy (deepened from an earlier, more washed-out slate-blue — the brief was
+ * "sophisticated, finance/research-coded," and the lighter version read closer to a generic SaaS
+ * blue), used sparingly for signal/attention (active nav, primary actions, the strongest Momentum)
+ * rather than as a general brand color. Light and dark are the SAME visual identity, not two
  * different-looking themes — dark mode swaps the token values below, every component reads the
  * tokens. Serif for display type (editorial, not a generic SaaS sans), a restrained sans for body,
  * monospace only for genuinely tabular/data text (counts, domains, timestamps) — not a thematic
@@ -26,8 +28,8 @@
   --color-ink-faint: #8a8a93;
   --color-line: #e7e5e2;
   --color-line-strong: #d4d2ce;
-  --color-accent: #496a80;
-  --color-accent-soft: #e6eef2;
+  --color-accent: #1d3a5c;
+  --color-accent-soft: #e2e9f0;
 
   --font-sans: var(--font-public-sans);
   --font-serif: var(--font-newsreader);
@@ -35,7 +37,7 @@
 }
 
 /* Dark theme — neutral charcoal surfaces (never pure black, never warm/brown), off-white ink, and
- * a lifted, more saturated amber so the accent keeps the same weight against a dark ground. */
+ * a lifted, more saturated navy-blue so the accent keeps the same weight against a dark ground. */
 [data-theme="dark"] {
   --color-canvas: #1a1a1a;
   --color-surface: #242424;
@@ -44,8 +46,8 @@
   --color-ink-faint: #7d7d7b;
   --color-line: #2f2f2e;
   --color-line-strong: #3d3d3b;
-  --color-accent: #9ab9cd;
-  --color-accent-soft: #263740;
+  --color-accent: #86abc9;
+  --color-accent-soft: #1b2c3d;
 }
 
 html {
