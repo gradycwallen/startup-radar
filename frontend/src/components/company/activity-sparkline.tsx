@@ -68,14 +68,17 @@ export function ActivitySparkline({ series }: { series: ActivitySeries }) {
   return (
     <div className="rounded-lg border border-line p-4">
       <div className="flex items-baseline justify-between">
-        <h4 className="text-sm font-medium text-ink">{metricLabel(series.metricName)}</h4>
+        <h4 className="text-sm font-medium text-ink">
+          {metricLabel(series.metricName)}
+          {series.sourceQualifier ? <span className="font-mono text-xs font-normal text-ink-faint"> · {series.sourceQualifier}</span> : null}
+        </h4>
         <span className="tabular text-xs text-ink-faint">{maxValue}{minValue !== maxValue ? ` (from ${minValue})` : ""}</span>
       </div>
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="mt-2 w-full touch-none"
         role="img"
-        aria-label={`${metricLabel(series.metricName)} over time, from ${formatShortDate(points[0]!.observedAt)} to ${formatShortDate(last.observedAt)}: ${minValue} to ${maxValue}`}
+        aria-label={`${metricLabel(series.metricName)}${series.sourceQualifier ? ` for ${series.sourceQualifier}` : ""} over time, from ${formatShortDate(points[0]!.observedAt)} to ${formatShortDate(last.observedAt)}: ${minValue} to ${maxValue}`}
         onPointerMove={handlePointerMove}
         onPointerLeave={() => setHoverIndex(null)}
       >
