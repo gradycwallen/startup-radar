@@ -1,68 +1,118 @@
 # Startup Radar
 
-Startup Radar is a tool I built to discover emerging startups and follow what they do over time. It collects companies from public sources, tracks changes in hiring, GitHub activity, and websites, and puts the evidence in a searchable directory.
+A discovery engine for emerging startups: it finds companies from public sources — funding
+announcements, accelerator cohorts, stealth launches, product releases — before they're widely
+covered, tracks what they do next (hiring, GitHub activity, website changes), and attaches a real
+evidence trail to every claim it makes. No hand-entered data, no fabricated enrichment.
 
-[Explore Startup Radar](https://startup-radar-grady.vercel.app)
+**[Explore Startup Radar →](https://startup-radar-grady.vercel.app)**
 
-I wanted to explore how an investor might find early signals while building a system that is honest about what it knows. The product is a starting point for research: public sources can be incomplete, company matches can be wrong, and a signal is not an investment recommendation.
+![Startup Radar — the Radar feed](docs/screenshot-radar.jpg)
 
-![Startup Radar directory](docs/screenshot-radar.jpg)
+This is a research tool, not investment advice — public sources can be incomplete, company
+matches can be wrong, and a signal is never a recommendation.
 
-## What you can explore
+## Two decisions worth knowing about
 
-- **Radar and Explore:** browse companies, search and filter the directory, and sort by momentum or recency.
-- **Company profiles:** see discovery events, observed activity, signals, and available source links in one place.
-- **Insights:** explore discovery volume, signal activity, and discovery sources across the dataset.
-- **Methodology and About:** see how the system works and read the decisions and mistakes behind it.
+**Deterministic over agentic.** The first version of the discovery engine used one Claude call per
+category — web search and web fetch to both find and verify candidates. It worked, but one category
+took ~20 minutes on a real run, and the worst-case cost per request ran to ~$2+ against a $0.75
+budget ceiling. An open-ended agentic loop can't run daily under a fixed, honest cost ceiling. So
+discovery is now a fully deterministic pipeline — real RSS/directory feeds, rule-based extraction
+and ranking, zero LLM calls anywhere in the path, enforced by a static test. It runs daily,
+unattended, for effectively free. AI is reserved for narrow, bounded judgment calls on evidence the
+pipeline has already surfaced — not for finding the evidence in the first place.
 
-An observation is a recorded measurement; a signal is a finding derived from observations. Momentum weights distinct signals by recency. A first observation establishes a baseline, so it shouldn't be mistaken for a change.
+**A mistake I shipped, caught, and reverted.** A feature once guessed a company's domain from its
+name and verified the guess by checking whether the company's name appeared on the resulting
+homepage. A precision audit found two of the first ten guesses were wrong in a specific, bad way: a
+funded startup called *Ande* matched `ande.com` — actually ANDE, an unrelated forensic DNA-testing
+company. A startup called *Travix* matched `travix.com` — an unrelated 450-employee travel agency.
+Both passed because the real, different company's own homepage naturally contains its own name —
+the check proved a name collision, not an identity match. The feature was reverted completely. The
+rule that came out of it: **a wrong domain is worse than a missing company.** An unresolved match is
+the correct outcome when evidence is thin, not a bug to paper over.
 
-## Two things I learned building it
+The full writeup — what I'd do differently if I started over, and why I'm interested in both AI
+operations and evaluating startups — is on the site itself: open `/about`.
 
-**Discovery needed a tighter process.** My first approach used Claude with web search to find and verify companies. A real run took around 20 minutes for one category, and the estimated worst-case cost was over $2 against a $0.75 budget. I replaced that discovery path with source feeds, extraction rules, entity matching, and ranking. The current discovery pipeline does not make LLM calls; a static test checks that boundary. The earlier approach remains in the repository for reference.
+## What's there
 
-**A matching result is not necessarily the right company.** I once shipped a feature that guessed domains from company names and checked whether the name appeared on the resulting homepage. An audit found two wrong matches among the first ten: Ande matched an unrelated DNA-testing company, and Travix matched an unrelated travel company. The check had confirmed a name collision, not the startup's identity. I reverted the feature. That experience changed how I think about missing data: I'd rather leave a domain unresolved than attach the wrong company to it.
+- **Radar and Explore** — the full company directory: search, filter, sort by Momentum or recency.
+- **Company profiles** — discovery events, every tracked signal, and the real source link behind
+  each one.
+- **Insights** — discovery volume, signal activity by family, and where companies are actually
+  coming from, across the whole dataset.
+- **Methodology and About** — how the system works, and the decisions (and the mistake) behind it.
 
-The [About page](frontend/src/app/about/page.tsx) goes into more detail on both decisions.
+An **observation** is a recorded measurement; a **signal** is a finding derived from comparing
+observations over time. **Momentum** is a recency-weighted count of distinct signals — never a
+hidden score. A company's *first* observation establishes a baseline, not a change — Signal
+Intelligence is explicit about which is which.
 
 ## Run the frontend
 
-You'll need Node.js 24 or newer. The frontend can run with a labeled sample dataset without database credentials:
-
 ```bash
 cd frontend
-npm ci
+npm install
+cp .env.local.example .env.local   # Supabase URL + service-role key, both server-only
 npm run dev
 ```
 
-Open the local address printed in the terminal. To use your own Supabase data, copy `frontend/.env.local.example` to `frontend/.env.local` and fill in the URL and service-role key. Keep the key server-side and out of version control. See the [frontend README](frontend/README.md) for more detail.
+Open <http://localhost:3000>. Without Supabase credentials it still runs, against a clearly-labeled
+sample dataset. See [`frontend/README.md`](frontend/README.md) for the full setup and structure.
 
-## How it works
+## How it's built
 
-1. Source providers collect public items from RSS, Google News, and accelerator directories.
-2. The discovery pipeline extracts and clusters candidates, resolves identities where it can, and ranks them using rules. Controlled writes add selected companies and discovery events.
-3. Signal collectors revisit companies and record hiring, GitHub, and website observations. Rules turn qualifying observations and changes into signals.
-4. The Next.js frontend reads the resulting data from Supabase and presents it alongside the available evidence.
+```
+Source providers (RSS / Google News / YC / Techstars)
+        │  SourceItem
+        ▼
+Deterministic extraction + prefilter + entity clustering     — regex/heuristic, NO LLM
+        ▼
+Existing-company matching + domain resolution                — read-only against Supabase
+        ▼
+Deterministic ranking (8 weighted, logged components)
+        ▼
+Two-track finalist selection (news / directory)
+        ▼
+Controlled writes — new companies + their initial events only, under hard per-run caps
+        ▼
+Signal Intelligence — hiring (ATS), GitHub, website-structure observers, revisited daily
+```
 
-Scheduled GitHub Actions workflows run discovery and signal collection. The source coverage and matching rules have limits, so results still need review. A failed observation is treated as unknown rather than zero, and website changes require confirmation across observations.
+| Area | What it is |
+|---|---|
+| `src/funnel/` | The deterministic discovery pipeline — extraction, prefiltering, clustering, domain resolution, ranking. Zero LLM calls, enforced by a static guard test. |
+| `src/sources/` | Source providers (RSS feeds, Google News, YC/Techstars directories) and the one shared, polite HTTP fetcher everything goes through. |
+| `src/discovery/` | The one controlled write path for new companies — hard caps, no retries without an idempotency key, "zero writes" is a valid outcome. |
+| `src/signals/` | Hiring/GitHub/website observation, append-only, with a non-negotiable rule: a metric that couldn't be observed is *unknown*, never defaulted to zero. |
+| `src/analysis/` | Read-only tools I run myself, outside the product — corroboration rate, a lead-time backtest, SEC Form D candidate matching, momentum decay. Each one is a question about the data, not a feature. |
+| `src/eval/` | Offline evaluation of the discovery pipeline against hand-labeled recall targets. |
+| `frontend/` | The Next.js product surface — Radar feed, Explore, Company Detail, Insights, Methodology, About. Read-only against Supabase; never writes, never calls an LLM. |
+| `.github/workflows/` | The two daily scheduled jobs (discovery, signal observation) that run all of the above unattended. |
 
-The main parts of the repository are:
+A fuller, still-current architecture doc — including the two phases this project went through and
+why Phase 1 (an earlier, Claude-web-search-based discovery approach, kept in `src/main.ts` for
+reference) was replaced — lives in [`CLAUDE.md`](CLAUDE.md).
 
-- `src/sources/` and `src/funnel/`: source collection, extraction, matching, and ranking.
-- `src/discovery/` and `src/signals/`: controlled discovery writes and signal collection.
-- `src/eval/`: offline evaluation of the discovery pipeline.
-- `src/analysis/`: read-only tools for investigating signals, lead time, and potential SEC filing matches.
-- `frontend/`: the read-only Next.js application.
-- `.github/workflows/`: scheduled jobs and checks.
+## Non-negotiables this codebase enforces, not just documents
 
-[`CLAUDE.md`](CLAUDE.md) contains more project context and historical implementation notes.
+- No LLM call anywhere under `src/funnel/`, `src/sources/`, or `src/eval/` — a static test fails
+  the build if one appears.
+- Exactly two files in the whole codebase may write to the database, each one checked by a test
+  that inspects every write call by table name.
+- A metric a collector couldn't observe is written as *missing*, never as zero — 7 dedicated
+  regression tests hold this line.
+- A guessed company domain may only be accepted with independent corroborating evidence, never on
+  the company's name alone — see the About page for the real case this rule came from.
 
 ## Checks
 
 From the repository root:
 
 ```bash
-npm ci
+npm install
 npm test
 npm run typecheck
 ```
@@ -71,10 +121,14 @@ For the frontend:
 
 ```bash
 cd frontend
-npm ci
+npm install
 npm test
 npm run lint
 npm run build
 ```
 
-Startup Radar is an evidence-tracking project, not financial or investment advice.
+## Disclaimer
+
+Startup Radar is an evidence-tracking tool, not financial or investment advice. Confidence and
+Momentum describe how well-evidenced and how active something appears in public sources — not a
+recommendation to invest in, work for, or partner with any company it lists.
