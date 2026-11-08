@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ThemeToggle } from "./theme-toggle";
 
 const LINKS = [
   { href: "/", label: "Radar" },
@@ -31,7 +32,10 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-line/60">
         <div className="mx-auto max-w-6xl px-6 py-4 font-mono text-[11px] text-ink-faint">
-          © {year} Startup Radar. Evidence-based discovery, not investment advice.
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>© {year} Startup Radar. Evidence-based discovery, not investment advice.</span>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </footer>
