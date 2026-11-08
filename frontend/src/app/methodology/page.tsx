@@ -30,9 +30,8 @@ export default function MethodologyPage() {
           </p>
           <p>
             Discovery is deterministic: extraction, filtering and ranking run on fixed rules, not a model guessing at what
-            looks interesting. Nothing is invented: every entry links back to the real article or listing it came from, and the
-            &ldquo;why it&rsquo;s on the radar&rdquo; line on each company is the actual evidence that got it accepted, not
-            generated summary text.
+            looks interesting. Company profiles show the available source links and discovery evidence so readers can
+            review the underlying information themselves. Sources and company matches can still be incomplete or incorrect.
           </p>
         </Section>
 
@@ -87,7 +86,7 @@ export default function MethodologyPage() {
           </p>
           <ul className="list-inside list-disc space-y-1">
             <li><span className="font-medium text-ink">First observed</span>: the state Scout saw the first time it looked. Not a claim that anything changed, just what was true at first look.</li>
-            <li><span className="font-medium text-ink">Confirmed change</span>: a real transition witnessed over time (e.g. a pricing page appearing where none existed before), only shown once it&rsquo;s been confirmed on a second, independent pass.</li>
+            <li><span className="font-medium text-ink">Detected change</span>: a transition observed over time, such as a pricing page appearing where none existed before. Website appearances require confirmation on a later pass.</li>
           </ul>
         </Section>
 
