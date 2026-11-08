@@ -92,9 +92,11 @@ Signal Intelligence — hiring (ATS), GitHub, website-structure observers, revis
 | `frontend/` | The Next.js product surface — Radar feed, Explore, Company Detail, Insights, Methodology, About. Read-only against Supabase; never writes, never calls an LLM. |
 | `.github/workflows/` | The two daily scheduled jobs (discovery, signal observation) that run all of the above unattended. |
 
-A fuller, still-current architecture doc — including the two phases this project went through and
-why Phase 1 (an earlier, Claude-web-search-based discovery approach, kept in `src/main.ts` for
-reference) was replaced — lives in [`CLAUDE.md`](CLAUDE.md).
+A fuller architecture overview — the full data flow, the database write posture, each signal
+family — lives in [`ARCHITECTURE.md`](ARCHITECTURE.md). The complete internal engineering log,
+including the two phases this project went through and why Phase 1 (an earlier, Claude-web-search-
+based discovery approach, kept in `src/main.ts` for reference) was replaced, lives in
+[`CLAUDE.md`](CLAUDE.md).
 
 ## Non-negotiables this codebase enforces, not just documents
 
