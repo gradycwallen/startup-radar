@@ -6,7 +6,7 @@ import { THEME_STORAGE_KEY } from "@/lib/theme/constants";
 /**
  * Light/dark toggle. Deliberately does NOT hold theme in React state: the current theme lives on
  * `<html data-theme>` (set before paint by the blocking script in src/lib/theme/theme-script.ts),
- * and the sun/moon icons are shown/hidden purely by CSS (`dark:hidden` / `dark:block`) keyed off
+ * and the labels are shown/hidden purely by CSS (`dark:hidden` / `dark:block`) keyed off
  * that attribute. That sidesteps any server/client hydration mismatch entirely — there is nothing
  * about this component's initial render that depends on which theme is active.
  */
@@ -42,8 +42,8 @@ export function ThemeToggle() {
       aria-pressed="false"
       className="text-xs font-medium text-ink-muted transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
     >
-      <span className="dark:hidden">Dark appearance</span>
-      <span className="hidden dark:inline">Light appearance</span>
+      <span className="dark:hidden">Dark</span>
+      <span className="hidden dark:inline">Light</span>
     </button>
   );
 }

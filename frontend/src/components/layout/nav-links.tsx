@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { ThemeToggle } from "./theme-toggle";
 
 const LINKS = [
   { href: "/", label: "Radar" },
@@ -31,6 +32,8 @@ export function NavLinks() {
           </Link>
         );
       })}
+      <span className="h-4 border-l border-line-strong" aria-hidden="true" />
+      <ThemeToggle />
     </nav>
   );
 }
