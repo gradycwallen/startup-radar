@@ -159,7 +159,7 @@ const METRIC_LABELS: Record<string, string> = {
   website_homepage_prelaunch: "Pre-launch marker",
 };
 
-function metricLabel(metricName: string | undefined): string {
+export function metricLabel(metricName: string | undefined): string {
   if (!metricName) return "Value";
   return METRIC_LABELS[metricName] ?? humanize(metricName.replace(/^(ats_|github_|website_)/, ""));
 }

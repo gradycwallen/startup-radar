@@ -4,6 +4,7 @@ import Image from "next/image";
 const LINKS = [
   { href: "/", label: "Radar" },
   { href: "/explore", label: "Explore" },
+  { href: "/insights", label: "Insights" },
   { href: "/methodology", label: "Methodology" },
   { href: "/about", label: "About" },
 ] as const;

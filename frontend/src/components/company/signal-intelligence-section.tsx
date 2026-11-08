@@ -1,5 +1,6 @@
 import type { SignalIntelligence } from "@/lib/data/types";
 import { buildCoverageLine, buildSignalViewModels, SIGNAL_EMPTY_STATE_COPY, type SignalViewModel } from "@/lib/derive/signal-view-model";
+import { ActivityTimeline } from "./activity-timeline";
 import { CoverageLine } from "./coverage-line";
 import { FirstLookSignalCard } from "./first-look-signal-card";
 import { TransitionSignalCard } from "./transition-signal-card";
@@ -35,6 +36,7 @@ export function SignalIntelligenceSection({ intelligence }: { intelligence: Sign
       <h2 className="text-2xl font-bold tracking-tight text-ink">Signal intelligence</h2>
       <p className="mt-1.5 text-sm text-ink-muted">Deterministic signals Startup Radar has derived from hiring, GitHub and website activity, never inferred, never scored.</p>
       <CoverageLine text={coverageText} />
+      <ActivityTimeline observations={intelligence.observations} />
 
       {viewModels.length === 0 ? (
         <p className="mt-5 text-sm text-ink-muted">{SIGNAL_EMPTY_STATE_COPY.noSignalsYet}</p>
