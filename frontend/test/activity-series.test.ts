@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildActivitySeries } from "../src/lib/derive/activity-series.ts";
+import { buildActivitySeries, groupSeriesBySource, hasSourceCollision, pickPrimarySourceId } from "../src/lib/derive/activity-series.ts";
 import type { SignalObservation, SignalSource } from "../src/lib/data/types.ts";
 
 function obs(overrides: Partial<SignalObservation> = {}): SignalObservation {
@@ -114,4 +114,91 @@ test("multiple DIFFERENT metrics from the same single source each get their own 
     series.map((s) => s.metricName).sort(),
     ["ats_open_jobs_total", "github_stars"],
   );
+});
+
+// ---- groupSeriesBySource / pickPrimarySourceId -------------------------------------------------
+
+test("groupSeriesBySource groups a single source's several metrics together, not one group per metric", () => {
+  const series = buildActivitySeries(
+    [
+      obs({ id: 1, signalSourceId: 1, metricName: "github_stars", observedAt: "2026-10-01T00:00:00Z" }),
+      obs({ id: 2, signalSourceId: 1, metricName: "github_stars", observedAt: "2026-10-02T00:00:00Z" }),
+      obs({ id: 3, signalSourceId: 1, metricName: "github_forks", observedAt: "2026-10-01T00:00:00Z" }),
+      obs({ id: 4, signalSourceId: 1, metricName: "github_forks", observedAt: "2026-10-02T00:00:00Z" }),
+    ],
+    [source({ id: 1 })],
+  );
+  const groups = groupSeriesBySource(series);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0]!.series.length, 2);
+});
+
+test("pickPrimarySourceId returns null when there's only one group -- nothing to choose between, no filter UI needed", () => {
+  const series = buildActivitySeries(
+    [obs({ id: 1, signalSourceId: 1, observedAt: "2026-10-01T00:00:00Z" }), obs({ id: 2, signalSourceId: 1, observedAt: "2026-10-02T00:00:00Z" })],
+    [source({ id: 1 })],
+  );
+  assert.equal(pickPrimarySourceId(groupSeriesBySource(series)), null);
+});
+
+test("pickPrimarySourceId picks the group with the highest latest github_stars value -- the flagship repo, not the first-seen one", () => {
+  const series = buildActivitySeries(
+    [
+      obs({ id: 1, signalSourceId: 72, metricName: "github_stars", numericValue: 123, observedAt: "2026-10-01T00:00:00Z" }), // SDK repo, seen first
+      obs({ id: 2, signalSourceId: 72, metricName: "github_stars", numericValue: 126, observedAt: "2026-10-02T00:00:00Z" }),
+      obs({ id: 3, signalSourceId: 71, metricName: "github_stars", numericValue: 4495, observedAt: "2026-10-01T00:00:00Z" }), // main repo, far more stars
+      obs({ id: 4, signalSourceId: 71, metricName: "github_stars", numericValue: 4673, observedAt: "2026-10-02T00:00:00Z" }),
+    ],
+    [source({ id: 72, externalId: "restatedev/sdk-typescript" }), source({ id: 71, externalId: "restatedev/restate" })],
+  );
+  assert.equal(pickPrimarySourceId(groupSeriesBySource(series)), 71, "the main repo (4673 stars) should win over the SDK repo (126 stars), regardless of input order");
+});
+
+test("pickPrimarySourceId falls back to total data points, then lowest signalSourceId, when no group has a github_stars series", () => {
+  const richer = buildActivitySeries(
+    [
+      obs({ id: 1, signalSourceId: 2, metricName: "ats_open_jobs_total", numericValue: 2, observedAt: "2026-10-01T00:00:00Z" }),
+      obs({ id: 2, signalSourceId: 2, metricName: "ats_open_jobs_total", numericValue: 3, observedAt: "2026-10-02T00:00:00Z" }),
+      obs({ id: 3, signalSourceId: 1, metricName: "github_forks", numericValue: 5, observedAt: "2026-10-01T00:00:00Z" }),
+      obs({ id: 4, signalSourceId: 1, metricName: "github_forks", numericValue: 6, observedAt: "2026-10-02T00:00:00Z" }),
+      obs({ id: 5, signalSourceId: 1, metricName: "github_forks", numericValue: 7, observedAt: "2026-10-03T00:00:00Z" }),
+    ],
+    [source({ id: 1 }), source({ id: 2, sourceType: "greenhouse", externalId: "acme" })],
+  );
+  assert.equal(pickPrimarySourceId(groupSeriesBySource(richer)), 1, "source 1 has 3 points vs source 2's 2, so it wins on richness");
+});
+
+// ---- hasSourceCollision -------------------------------------------------------------------------
+//
+// REGRESSION (found live, 2026-11-08): GitHits has two active sources (a github_repo and a
+// github_org) that report entirely DIFFERENT metrics -- no collision at all -- but the filter UI
+// was triggering anyway because it keyed off "more than one distinct source", not "more than one
+// source for the SAME metric". A company with several complementary (non-overlapping) sources
+// must render the plain flat grid, exactly like a single-source company, never a dropdown.
+
+test("REGRESSION: two sources reporting entirely DIFFERENT metrics have no collision -- the filter must not trigger just because there's more than one source", () => {
+  const series = buildActivitySeries(
+    [
+      obs({ id: 1, signalSourceId: 1, metricName: "github_stars", observedAt: "2026-10-01T00:00:00Z" }),
+      obs({ id: 2, signalSourceId: 1, metricName: "github_stars", observedAt: "2026-10-02T00:00:00Z" }),
+      obs({ id: 3, signalSourceId: 2, metricName: "github_org_public_repos", observedAt: "2026-10-01T00:00:00Z" }),
+      obs({ id: 4, signalSourceId: 2, metricName: "github_org_public_repos", observedAt: "2026-10-02T00:00:00Z" }),
+    ],
+    [source({ id: 1, sourceType: "github_repo" }), source({ id: 2, sourceType: "github_org", externalId: "acme-org" })],
+  );
+  assert.equal(groupSeriesBySource(series).length, 2, "still two distinct sources...");
+  assert.equal(hasSourceCollision(series), false, "...but no collision, since they don't share a metric name");
+});
+
+test("hasSourceCollision is true exactly when the Restate-shaped case applies (same metric, multiple sources)", () => {
+  const series = buildActivitySeries(
+    [
+      obs({ id: 1, signalSourceId: 71, metricName: "github_stars", observedAt: "2026-10-01T00:00:00Z" }),
+      obs({ id: 2, signalSourceId: 71, metricName: "github_stars", observedAt: "2026-10-02T00:00:00Z" }),
+      obs({ id: 3, signalSourceId: 72, metricName: "github_stars", observedAt: "2026-10-01T00:00:00Z" }),
+      obs({ id: 4, signalSourceId: 72, metricName: "github_stars", observedAt: "2026-10-02T00:00:00Z" }),
+    ],
+    [source({ id: 71, externalId: "restatedev/restate" }), source({ id: 72, externalId: "restatedev/sdk-typescript" })],
+  );
+  assert.equal(hasSourceCollision(series), true);
 });

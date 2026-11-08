@@ -98,3 +98,61 @@ export function buildActivitySeries(observations: readonly SignalObservation[], 
   }
   return out;
 }
+
+/**
+ * True only when at least one metric name is genuinely reported by more than one source — the
+ * Restate case. A company can easily have several active sources (a GitHub repo AND a GitHub org,
+ * a hiring board, a website) without any of them colliding on the same metric name; that's the
+ * normal, common shape and must render as a single flat grid, never a filter UI, regardless of
+ * how many distinct signalSourceIds happen to be present.
+ */
+export function hasSourceCollision(series: readonly ActivitySeries[]): boolean {
+  return series.some((s) => s.sourceQualifier !== null);
+}
+
+export interface ActivitySourceGroup {
+  signalSourceId: number;
+  /** Null only when this is the sole group (nothing to disambiguate) — callers that need a
+   * display label for a single-group company should fall back to something generic themselves. */
+  label: string | null;
+  series: ActivitySeries[];
+}
+
+/** Groups an already-built series list by source — the unit a reader actually thinks in ("this
+ * repo's charts"), not a flat metric-first list that scatters one repo's stars/forks/issues apart
+ * from each other and interleaves them with a different repo's. Order is stable: sources appear
+ * in the order their first series was encountered. */
+export function groupSeriesBySource(series: readonly ActivitySeries[]): ActivitySourceGroup[] {
+  const groups = new Map<number, ActivitySeries[]>();
+  for (const s of series) {
+    const list = groups.get(s.signalSourceId);
+    if (list) list.push(s);
+    else groups.set(s.signalSourceId, [s]);
+  }
+  return [...groups.entries()].map(([signalSourceId, group]) => ({ signalSourceId, label: group[0]!.sourceQualifier, series: group }));
+}
+
+/**
+ * Which source group should be shown by default when a company has more than one (e.g. Restate's
+ * 8 tracked repos) — never an arbitrary/first-seen pick. Ranked by: (1) the group's own
+ * github_stars series' latest value, highest wins — the flagship repo in a multi-repo project is
+ * reliably the most-starred one; (2) total real data points across the group's series, as a
+ * fallback for a non-GitHub collision this ranking wasn't originally written for; (3) lowest
+ * signalSourceId, a stable final tie-break so the choice is always deterministic. Returns null
+ * when there's nothing to pick between (0 or 1 groups) — callers should treat that as "show
+ * everything, no filter UI needed."
+ */
+export function pickPrimarySourceId(groups: readonly ActivitySourceGroup[]): number | null {
+  if (groups.length <= 1) return null;
+  function score(group: ActivitySourceGroup): [number, number, number] {
+    const starsSeries = group.series.find((s) => s.metricName === "github_stars");
+    const latestStars = starsSeries ? starsSeries.points[starsSeries.points.length - 1]!.value : 0;
+    const totalPoints = group.series.reduce((sum, s) => sum + s.points.length, 0);
+    return [latestStars, totalPoints, -group.signalSourceId];
+  }
+  return groups.reduce((best, g) => {
+    const [bs, bp, bt] = score(best);
+    const [gs, gp, gt] = score(g);
+    return gs > bs || (gs === bs && (gp > bp || (gp === bp && gt > bt))) ? g : best;
+  }).signalSourceId;
+}
