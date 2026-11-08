@@ -250,6 +250,23 @@ export class ReadOnlyDb implements CompanyReader {
     return out;
   }
 
+  /** Every company's (id, name) — nothing else. For src/analysis/sec-form-d.ts, which only needs
+   * a name to search against; deliberately narrower than readAllForSnapshot's (id,name,domain). */
+  async getCompanyNames(): Promise<{ id: number; name: string }[]> {
+    const page = 1000;
+    const out: { id: number; name: string }[] = [];
+    for (let from = 0; ; from += page) {
+      const rows = await this.#read("sec_form_d:companies", async (signal) => {
+        const { data, error } = await this.#client.from("companies").select("id,name").order("id").range(from, from + page - 1).abortSignal(signal);
+        if (error) throw new Error(error.message);
+        return (data as { id: number; name: string }[] | null) ?? [];
+      });
+      out.push(...rows);
+      if (rows.length < page) break;
+    }
+    return out;
+  }
+
   async counts(): Promise<RowCounts> {
     const count = async (table: keyof RowCounts): Promise<number> =>
       this.#read(`count(${table})`, async (signal) => {
