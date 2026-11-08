@@ -35,7 +35,9 @@
 }
 
 /* Dark theme — neutral charcoal surfaces (never pure black, never warm/brown), off-white ink, and
- * a lighter maroon accent for contrast against a dark ground. */
+ * a deepened wine accent for contrast against a dark ground. (An earlier pass here, #d9a1ad, was
+ * too light/desaturated and read as pastel pink rather than wine — same hue family as the light
+ * accent, #702b3a, just brightened enough for dark-ground contrast: HSL(347°, 40%, 55%).) */
 [data-theme="dark"] {
   --color-canvas: #1a1a1a;
   --color-surface: #242424;
@@ -44,8 +46,8 @@
   --color-ink-faint: #7d7d7b;
   --color-line: #2f2f2e;
   --color-line-strong: #3d3d3b;
-  --color-accent: #d9a1ad;
-  --color-accent-soft: #40262d;
+  --color-accent: #ba5e72;
+  --color-accent-soft: #3a1f26;
 }
 
 html {
