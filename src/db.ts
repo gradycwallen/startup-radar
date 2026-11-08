@@ -190,6 +190,36 @@ export class ReadOnlyDb implements CompanyReader {
     return { companies, events };
   }
 
+  /**
+   * All companies' discovery timestamps plus which ones were discovered via a funding event —
+   * the two facts src/analysis/corroboration.ts needs and nothing else. Read-only, paged, same
+   * deadline/retry policy as every other read here.
+   */
+  async getCompanyDiscoveryInfo(): Promise<{ id: number; discoveredAt: string; hasFundingEvent: boolean }[]> {
+    const page = 1000;
+    const companies: { id: number; discovered_at: string }[] = [];
+    for (let from = 0; ; from += page) {
+      const rows = await this.#read("corroboration:companies", async (signal) => {
+        const { data, error } = await this.#client.from("companies").select("id,discovered_at").order("id").range(from, from + page - 1).abortSignal(signal);
+        if (error) throw new Error(error.message);
+        return (data as { id: number; discovered_at: string }[] | null) ?? [];
+      });
+      companies.push(...rows);
+      if (rows.length < page) break;
+    }
+    const fundingCompanyIds = new Set<number>();
+    for (let from = 0; ; from += page) {
+      const rows = await this.#read("corroboration:funding_events", async (signal) => {
+        const { data, error } = await this.#client.from("discovery_events").select("company_id").eq("event_type", "funding").order("id").range(from, from + page - 1).abortSignal(signal);
+        if (error) throw new Error(error.message);
+        return (data as { company_id: number }[] | null) ?? [];
+      });
+      for (const r of rows) fundingCompanyIds.add(r.company_id);
+      if (rows.length < page) break;
+    }
+    return companies.map((c) => ({ id: c.id, discoveredAt: c.discovered_at, hasFundingEvent: fundingCompanyIds.has(c.id) }));
+  }
+
   async counts(): Promise<RowCounts> {
     const count = async (table: keyof RowCounts): Promise<number> =>
       this.#read(`count(${table})`, async (signal) => {
