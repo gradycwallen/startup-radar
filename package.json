@@ -17,7 +17,8 @@
     "discover": "tsx src/discover-main.ts",
     "analyze:corroboration": "tsx src/analysis/corroboration-main.ts",
     "analyze:lead-time": "tsx src/analysis/lead-time-backtest-main.ts",
-    "analyze:sec-form-d": "tsx src/analysis/sec-form-d-main.ts"
+    "analyze:sec-form-d": "tsx src/analysis/sec-form-d-main.ts",
+    "analyze:staleness": "tsx src/analysis/staleness-main.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
