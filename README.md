@@ -2,6 +2,8 @@
 
 Startup Radar is a tool I built to discover emerging startups and follow what they do over time. It collects companies from public sources, tracks changes in hiring, GitHub activity, and websites, and puts the evidence in a searchable directory.
 
+[Explore Startup Radar](https://startup-radar-grady.vercel.app)
+
 I wanted to explore how an investor might find early signals while building a system that is honest about what it knows. The product is a starting point for research: public sources can be incomplete, company matches can be wrong, and a signal is not an investment recommendation.
 
 ![Startup Radar directory](docs/screenshot-radar.jpg)
