@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { PageBanner } from "@/components/layout/page-banner";
+import { FunnelChart } from "@/components/methodology/funnel-chart";
+import { FUNNEL_SNAPSHOT } from "@/lib/data/funnel-snapshot";
 
 export const metadata: Metadata = { title: "Methodology" };
 
@@ -33,6 +35,23 @@ export default function MethodologyPage() {
             generated summary text.
           </p>
         </Section>
+
+        <section className="border-t border-line py-8">
+          <h2 className="font-serif text-2xl text-ink">How a lead becomes a finalist</h2>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-muted">
+            One real run of the pipeline, captured {new Date(FUNNEL_SNAPSHOT.capturedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} — not a live figure, a
+            snapshot, refreshed periodically. Every stage here drops real volume for a real, inspectable reason; nothing is
+            hidden to make the funnel look tighter than it is.
+          </p>
+          <div className="mt-6 max-w-2xl">
+            <FunnelChart stages={FUNNEL_SNAPSHOT.stages} />
+          </div>
+          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-muted">
+            The survivors split into two parallel tracks, each with its own selection: <span className="font-medium text-ink">{FUNNEL_SNAPSHOT.newsFinalists} news-track finalists</span> and{" "}
+            <span className="font-medium text-ink">{FUNNEL_SNAPSHOT.directoryFinalists} directory-track finalists</span> (YC/Techstars), diversity-reserved across lanes and providers so one
+            prolific source can&rsquo;t crowd out everything else.
+          </p>
+        </section>
 
         <Section heading="Confidence">
           <p>
