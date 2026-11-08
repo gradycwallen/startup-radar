@@ -11,16 +11,16 @@ export function SourceMixChart({ entries }: { entries: SourceMixEntry[] }) {
   const max = Math.max(...entries.map((e) => e.count));
 
   return (
-    <div className="rounded-lg border border-line p-4">
-      <h4 className="text-sm font-medium text-ink">Discovery source mix</h4>
+    <div className="border-t border-line py-3">
+      <h4 className="text-xs font-semibold text-ink">Discovery source mix</h4>
       <div className="mt-3 space-y-2">
         {entries.map((e) => (
           <div key={e.source} className="flex items-center gap-3">
             <span className="w-36 shrink-0 truncate text-xs text-ink-muted" title={e.source}>
               {e.source}
             </span>
-            <div className="h-5 flex-1 overflow-hidden rounded bg-line/40">
-              <div className="h-full rounded bg-accent" style={{ width: `${Math.max((e.count / max) * 100, 3)}%` }} />
+            <div className="h-2 flex-1 overflow-hidden bg-line/40">
+              <div className="h-full bg-accent/70" style={{ width: `${Math.max((e.count / max) * 100, 3)}%` }} />
             </div>
             <span className="tabular w-8 shrink-0 text-right text-xs font-medium text-ink">{e.count}</span>
           </div>

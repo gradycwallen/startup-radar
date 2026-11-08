@@ -16,7 +16,7 @@ function Section({ heading, children }: { heading: string; children: React.React
   return (
     <section className="border-t border-line py-8 first:border-t-0 first:pt-0">
       <h2 className="font-serif text-2xl text-ink">{heading}</h2>
-      <div className="mt-3 max-w-2xl space-y-3 text-[15px] leading-relaxed text-ink-muted">{children}</div>
+      <div className="mt-3 space-y-3 text-[15px] leading-relaxed text-ink-muted">{children}</div>
     </section>
   );
 }
@@ -26,16 +26,29 @@ export default async function AboutPage() {
 
   return (
     <>
-      <PageBanner eyebrow="About" title="Why this exists, and how it was built">
-        The real engineering story: what worked, what didn&rsquo;t, and what I&rsquo;d do differently.
+      <PageBanner compact eyebrow="About" title="Why this exists, and how it was built">
+        The decisions and lessons behind Startup Radar.
       </PageBanner>
       <main className="mx-auto max-w-7xl px-6 pb-10 pt-8 sm:px-8 sm:pb-16 sm:pt-10">
-        <div className="max-w-3xl">
-          <div className="mb-10 grid gap-6 border border-line bg-accent-soft/40 p-6 sm:grid-cols-3">
-            <div><p className="text-xs font-semibold uppercase tracking-wider text-accent">The problem</p><p className="mt-2 text-sm leading-relaxed text-ink-muted">Early startup signals are scattered across public sources and difficult to assess consistently.</p></div>
-            <div><p className="text-xs font-semibold uppercase tracking-wider text-accent">What I built</p><p className="mt-2 text-sm leading-relaxed text-ink-muted">A deterministic discovery and observation pipeline with source-linked company profiles.</p></div>
-            <div><p className="text-xs font-semibold uppercase tracking-wider text-accent">What I learned</p><p className="mt-2 text-sm leading-relaxed text-ink-muted">Bounded systems are easier to operate, and uncertain identity matches need independent evidence.</p></div>
-          </div>
+        <p className="mb-8 text-sm leading-relaxed">
+              <Link href="/methodology" className="font-medium text-accent hover:underline">
+                Read the product-facing methodology
+              </Link>
+              {" · "}
+              <a
+                href="https://github.com/gradycwallen/startup-radar"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="font-medium text-accent hover:underline"
+              >
+                Browse the source
+              </a>
+              {" · "}
+              <a href="/api/companies" className="font-medium text-accent hover:underline">
+                Export the current dataset (JSON)
+              </a>
+        </p>
+        <div>
           <Section heading="Why I built this">
             <p>
               I wanted to understand what it actually takes to evaluate something as uncertain as an early-stage startup,
@@ -93,41 +106,6 @@ export default async function AboutPage() {
             </p>
           </Section>
 
-          <Section heading="What I&rsquo;d change if I started over">
-            <ul className="list-inside list-disc space-y-2">
-              <li>
-                <span className="font-medium text-ink">Build the deterministic path first.</span> I built the expensive,
-                agentic version before I&rsquo;d proven the cheap version couldn&rsquo;t work. It should have been the
-                other way around.
-              </li>
-              <li>
-                <span className="font-medium text-ink">Throttle growth against observation depth.</span> The company list
-                grows faster than any one company accumulates history, so most of what Signal Intelligence shows today
-                is a first-look snapshot, not a real change over time. I&rsquo;d cap new-company intake against how fast
-                the system can actually build longitudinal evidence, instead of treating discovery volume and signal
-                depth as separate goals.
-              </li>
-              <li>
-                <span className="font-medium text-ink">Invest in domain resolution earlier.</span> It&rsquo;s still the
-                weakest link in the whole pipeline. A meaningful share of discovered companies have no resolved domain
-                at all, and the one attempt to fix that algorithmically is the mistake above. I&rsquo;d treat it as a
-                first-class problem from day one, not something to patch in later.
-              </li>
-            </ul>
-          </Section>
-
-          <Section heading="Why AI operations and evaluating startups">
-            <p>
-              What pulled me into this project is the same thing that pulls me toward both of those: the interesting
-              problem isn&rsquo;t generating more output, it&rsquo;s deciding what to trust, under real uncertainty, with
-              a system that has to be honest about what it doesn&rsquo;t know. That&rsquo;s true of an AI tool deciding
-              whether to call a company &ldquo;funded&rdquo; or just &ldquo;mentioned,&rdquo; and it&rsquo;s true of an
-              investor deciding whether early traction is real. I like the operational side of that problem as much as
-              the investment-judgment side of it, building the system that surfaces the signal cleanly, and then
-              actually reasoning about what the signal means.
-            </p>
-          </Section>
-
           <Section heading="What&rsquo;s under the hood">
             <p>
               The full technical writeup covering the pipeline, safeguards, and limitations lives
@@ -136,24 +114,6 @@ export default async function AboutPage() {
               offline snapshot/replay system so the entire test suite runs with zero network calls and zero spend, and
               two, and only two, files in the whole codebase allowed to write to the database, each one enforced by a
               static test that inspects every write call by name.
-            </p>
-            <p>
-              <Link href="/methodology" className="font-medium text-accent hover:underline">
-                Read the product-facing methodology
-              </Link>
-              {" · "}
-              <a
-                href="https://github.com/gradycwallen/startup-radar"
-                target="_blank"
-                rel="noreferrer noopener"
-                className="font-medium text-accent hover:underline"
-              >
-                Browse the source
-              </a>
-              {" · "}
-              <a href="/api/companies" className="font-medium text-accent hover:underline">
-                Export the current dataset (JSON)
-              </a>
             </p>
           </Section>
         </div>

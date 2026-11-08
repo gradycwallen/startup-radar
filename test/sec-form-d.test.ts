@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { extractFilerName, formatCandidates, matchFormDCandidates } from "../src/analysis/sec-form-d.ts";
+import { extractFilerName, formatCandidates, matchFormDCandidates, searchFormD } from "../src/analysis/sec-form-d.ts";
+
+test("SEC search distinguishes empty results from failed and malformed responses", async () => {
+  assert.deepEqual(await searchFormD("Example", async () => ({ status: 200, text: '{"hits":{"hits":[]}}' })), []);
+  await assert.rejects(searchFormD("Example", async () => ({ status: 403, text: "blocked" })), /HTTP 403/);
+  await assert.rejects(searchFormD("Example", async () => ({ status: 200, text: "not json" })), /invalid JSON/);
+  await assert.rejects(searchFormD("Example", async () => ({ status: 200, text: '{}' })), /unexpected response/);
+  await assert.rejects(searchFormD("Example", async () => ({ status: 200, text: '{"hits":{"hits":[{}]}}' })), /incomplete filing/);
+  await assert.rejects(searchFormD("Example", async () => { throw new Error("network failed"); }), /network failed/);
+});
 
 test("extractFilerName strips the trailing CIK annotation SEC's search index always appends", () => {
   assert.equal(extractFilerName("OneDome Global Inc.  (CIK 0001757593)"), "OneDome Global Inc.");

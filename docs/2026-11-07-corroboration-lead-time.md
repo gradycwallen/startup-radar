@@ -36,9 +36,9 @@ First corroborating signal, by family:
 
 All 147 funding-discovered companies have at least one resolved signal source (every company gets
 an unconditional `website` source — see `CLAUDE.md` §5D — so this number is expected to be ~100%
-and isn't itself informative). Of those, **25 (17%) have had at least one independent signal fire**
-— a real change in hiring, GitHub activity, or website structure, not just the original funding
-article.
+and isn't itself informative). Of those, **25 (17%) have had at least one signal fire** from
+hiring, GitHub activity, or website observations. These include first-look signals as well as
+changes over time; they do not all establish that activity changed after discovery.
 
 ## Reading this honestly
 

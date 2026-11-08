@@ -33,6 +33,36 @@ export interface SecFormDHit {
   bizState: string | null;
 }
 
+/** An invalid response is an error, not evidence that there are no filings. */
+export function parseEftsResponse(raw: string): SecFormDHit[] {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    throw new Error("SEC returned invalid JSON");
+  }
+  if (!payload || typeof payload !== "object" || !("hits" in payload) ||
+      !payload.hits || typeof payload.hits !== "object" || !("hits" in payload.hits) ||
+      !Array.isArray(payload.hits.hits)) {
+    throw new Error("SEC returned an unexpected response");
+  }
+  return payload.hits.hits.map((hit: { _source?: { display_names?: string[]; ciks?: string[]; file_date?: string; biz_states?: string[]; adsh?: string } }) => {
+    const source = hit?._source;
+    const displayName = source?.display_names?.[0];
+    const cik = source?.ciks?.[0];
+    const fileDate = source?.file_date;
+    if (!displayName || !cik || !fileDate) throw new Error("SEC returned an incomplete filing record");
+    return { displayName, cik, accessionNumber: source?.adsh ?? "", fileDate, bizState: source?.biz_states?.[0] ?? null };
+  });
+}
+
+export async function searchFormD(companyName: string, fetchText: (url: string) => Promise<{ status: number; text: string }>): Promise<SecFormDHit[]> {
+  const url = `https://efts.sec.gov/LATEST/search-index?q=${encodeURIComponent(companyName)}&forms=D`;
+  const result = await fetchText(url);
+  if (result.status !== 200) throw new Error(`SEC returned HTTP ${result.status}`);
+  return parseEftsResponse(result.text);
+}
+
 export interface SecFormDCandidate {
   companyId: number;
   companyName: string;

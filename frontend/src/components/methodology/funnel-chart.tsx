@@ -18,7 +18,7 @@ export function FunnelChart({ stages }: { stages: readonly FunnelStage[] }) {
   const minOpacity = 0.3;
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-4 border-t border-line pt-4">
       {stages.map((stage, i) => {
         const widthPct = Math.max((stage.count / max) * 100, 4);
         const opacity = minOpacity + (1 - minOpacity) * (i / Math.max(stages.length - 1, 1));
@@ -29,8 +29,8 @@ export function FunnelChart({ stages }: { stages: readonly FunnelStage[] }) {
               <span className="text-sm font-medium text-ink">{stage.label}</span>
               <span className="tabular shrink-0 text-sm font-semibold text-ink">{stage.count.toLocaleString()}</span>
             </div>
-            <div className="mt-1 h-7 rounded bg-line/40">
-              <div className="flex h-full items-center rounded" style={{ width: `${widthPct}%`, backgroundColor: "var(--color-accent)", opacity }} />
+            <div className="mt-2 h-2 bg-line/40">
+              <div className="h-full" style={{ width: `${widthPct}%`, backgroundColor: "var(--color-accent)", opacity }} />
             </div>
             <p className="mt-1 text-xs text-ink-faint">
               {stage.description}

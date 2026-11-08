@@ -9,7 +9,7 @@ function Section({ heading, children }: { heading: string; children: React.React
   return (
     <section className="border-t border-line py-8 first:border-t-0 first:pt-0">
       <h2 className="font-serif text-2xl text-ink">{heading}</h2>
-      <div className="mt-3 max-w-2xl space-y-3 text-[15px] leading-relaxed text-ink-muted">{children}</div>
+      <div className="mt-3 space-y-3 text-[15px] leading-relaxed text-ink-muted">{children}</div>
     </section>
   );
 }
@@ -17,11 +17,11 @@ function Section({ heading, children }: { heading: string; children: React.React
 export default function MethodologyPage() {
   return (
     <>
-    <PageBanner eyebrow="Methodology" title="How Startup Radar works">
+    <PageBanner compact eyebrow="Methodology" title="How Startup Radar works">
       What Scout actually does, what the numbers on this site mean, and what we deliberately don&rsquo;t do.
     </PageBanner>
     <main className="mx-auto max-w-7xl px-6 pb-10 pt-8 sm:px-8 sm:pb-14 sm:pt-10">
-      <div className="max-w-3xl">
+      <div>
         <Section heading="Discovery">
           <p>
             Every company here was surfaced by Scout, Startup Radar&rsquo;s discovery engine, from real public sources: funding
@@ -38,15 +38,13 @@ export default function MethodologyPage() {
 
         <section className="border-t border-line py-8">
           <h2 className="font-serif text-2xl text-ink">How a lead becomes a finalist</h2>
-          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-muted">
-            One real run of the pipeline, captured {new Date(FUNNEL_SNAPSHOT.capturedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} — not a live figure, a
-            snapshot, refreshed periodically. Every stage here drops real volume for a real, inspectable reason; nothing is
-            hidden to make the funnel look tighter than it is.
+          <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">
+            This snapshot shows one pipeline run, captured {new Date(FUNNEL_SNAPSHOT.capturedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}. It is not live data.
           </p>
-          <div className="mt-6 max-w-2xl">
+          <div className="mt-6">
             <FunnelChart stages={FUNNEL_SNAPSHOT.stages} />
           </div>
-          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-muted">
+          <p className="mt-4 text-[15px] leading-relaxed text-ink-muted">
             The survivors split into two parallel tracks, each with its own selection: <span className="font-medium text-ink">{FUNNEL_SNAPSHOT.newsFinalists} news-track finalists</span> and{" "}
             <span className="font-medium text-ink">{FUNNEL_SNAPSHOT.directoryFinalists} directory-track finalists</span> (YC/Techstars), diversity-reserved across lanes and providers so one
             prolific source can&rsquo;t crowd out everything else.

@@ -17,7 +17,7 @@ export default async function ExplorePage({ searchParams }: PageProps<"/explore"
 
   return (
     <>
-    <PageBanner eyebrow="Explore" title="Browse the company universe">
+    <PageBanner compact eyebrow="Explore" title="Browse the company universe">
       Search and filter every company Startup Radar has discovered, useful when you already know roughly what you&rsquo;re
       looking for, or want to browse by category, signal type or confidence.
     </PageBanner>

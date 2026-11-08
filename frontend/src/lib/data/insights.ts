@@ -33,7 +33,7 @@ const EMPTY: InsightsData = { companies: [], signals: [] };
 
 export const getInsightsData = cache(async (): Promise<InsightsData> => {
   const client = getServerSupabaseClient();
-  if (!client) return EMPTY;
+  if (!client) return { ...EMPTY, unavailable: true };
 
   async function readPages(table: string, columns: string) {
     const rows: unknown[] = [];

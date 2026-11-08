@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import { loadEnvFile, readSupabaseEnv } from "../config.ts";
 import { ReadOnlyDb } from "../db.ts";
 import { PoliteFetcher } from "../sources/fetcher.ts";
-import { formatCandidates, matchFormDCandidates, type SecFormDCandidate, type SecFormDHit } from "./sec-form-d.ts";
+import { formatCandidates, matchFormDCandidates, searchFormD, type SecFormDCandidate, type SecFormDHit } from "./sec-form-d.ts";
 
 /**
  * Read-only CLI: for companies Scout already tracks, search SEC EDGAR's full-text search index
@@ -33,47 +33,6 @@ except outgoing request headers to sec.gov; it is never logged, printed, or comm
 Makes real, polite requests to efts.sec.gov (SEC's own full-text search; undocumented but public
 and free, no API key). Paces well under SEC's documented 10 req/s fair-access limit.
 `;
-
-interface EftsHit {
-  _source?: {
-    display_names?: string[];
-    ciks?: string[];
-    file_date?: string;
-    biz_states?: string[];
-    adsh?: string;
-  };
-}
-
-interface EftsResponse {
-  hits?: { hits?: EftsHit[] };
-}
-
-function parseEftsResponse(raw: string): SecFormDHit[] {
-  let json: EftsResponse;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    return []; // malformed/unexpected response from an undocumented endpoint: treat as no data, never crash the run
-  }
-  const hits = json.hits?.hits ?? [];
-  const out: SecFormDHit[] = [];
-  for (const h of hits) {
-    const src = h._source;
-    const displayName = src?.display_names?.[0];
-    const cik = src?.ciks?.[0];
-    const fileDate = src?.file_date;
-    if (!displayName || !cik || !fileDate) continue; // skip anything missing the fields this tool needs; don't guess
-    out.push({ displayName, cik, accessionNumber: src?.adsh ?? "", fileDate, bizState: src?.biz_states?.[0] ?? null });
-  }
-  return out;
-}
-
-async function searchFormD(fetcher: PoliteFetcher, companyName: string): Promise<SecFormDHit[]> {
-  const url = `https://efts.sec.gov/LATEST/search-index?q=${encodeURIComponent(companyName)}&forms=D`;
-  const result = await fetcher.getText(url, { provider: "sec-form-d", accept: "application/json" });
-  if (result.status !== 200) return [];
-  return parseEftsResponse(result.text);
-}
 
 async function main() {
   const { values } = parseArgs({ options: { company: { type: "string" }, limit: { type: "string" }, json: { type: "boolean" }, help: { type: "boolean", short: "h" } }, strict: true });
@@ -112,18 +71,26 @@ async function main() {
   const fetcher = new PoliteFetcher({ userAgent, hostDelayMs: { "efts.sec.gov": 400 }, minDelayMs: 400 });
 
   const allCandidates: SecFormDCandidate[] = [];
+  let failed = 0;
   for (const company of companies) {
     let hits: SecFormDHit[];
     try {
-      hits = await searchFormD(fetcher, company.name);
-    } catch {
-      continue; // one company's network failure must not abort the whole run
+      hits = await searchFormD(company.name, (url) => fetcher.getText(url, { provider: "sec-form-d", accept: "application/json" }));
+    } catch (error) {
+      failed++;
+      const reason = error instanceof Error && /^SEC returned /.test(error.message) ? error.message : "network request failed";
+      console.error(`SEC lookup failed for ${company.name} (id ${company.id}): ${reason}`);
+      continue;
     }
     allCandidates.push(...matchFormDCandidates(company, hits));
   }
 
   if (values.json) console.log(JSON.stringify(allCandidates, null, 2));
   else console.log(formatCandidates(allCandidates));
+  if (failed > 0) {
+    console.error(`${failed} of ${companies.length} SEC lookups failed; results are incomplete.`);
+    process.exitCode = 1;
+  }
 }
 
 main().catch((err) => {

@@ -46,6 +46,7 @@ export function ActivitySparkline({ series }: { series: ActivitySeries }) {
 
   const pathD = xy.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const last = points[points.length - 1]!;
+  const first = points[0]!;
   const lastXY = xy[xy.length - 1]!;
   const hovered = hoverIndex !== null ? points[hoverIndex] : null;
   const hoveredXY = hoverIndex !== null ? xy[hoverIndex] : null;
@@ -72,13 +73,13 @@ export function ActivitySparkline({ series }: { series: ActivitySeries }) {
           {metricLabel(series.metricName)}
           {series.sourceQualifier ? <span className="font-mono text-xs font-normal text-ink-faint"> · {series.sourceQualifier}</span> : null}
         </h4>
-        <span className="tabular text-xs text-ink-faint">{maxValue}{minValue !== maxValue ? ` (from ${minValue})` : ""}</span>
+        <span className="tabular text-xs text-ink-faint">{last.value}{first.value !== last.value ? ` (from ${first.value})` : ""}</span>
       </div>
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="mt-2 w-full touch-none"
         role="img"
-        aria-label={`${metricLabel(series.metricName)}${series.sourceQualifier ? ` for ${series.sourceQualifier}` : ""} over time, from ${formatShortDate(points[0]!.observedAt)} to ${formatShortDate(last.observedAt)}: ${minValue} to ${maxValue}`}
+        aria-label={`${metricLabel(series.metricName)}${series.sourceQualifier ? ` for ${series.sourceQualifier}` : ""} over time, from ${formatShortDate(first.observedAt)} to ${formatShortDate(last.observedAt)}: ${first.value} to ${last.value}; range ${minValue} to ${maxValue}`}
         onPointerMove={handlePointerMove}
         onPointerLeave={() => setHoverIndex(null)}
       >
