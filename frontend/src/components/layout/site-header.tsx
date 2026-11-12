@@ -7,7 +7,7 @@ export function SiteHeader() {
     // A solid canvas ground (no backdrop-blur) and a hairline rule — closer to a masthead than a
     // floating glass app-bar.
     <header className="sticky top-0 z-30 border-b border-line bg-canvas">
-      <div className="mx-auto flex max-w-7xl flex-col items-start gap-2 px-4 py-3 sm:h-20 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-0">
+      <div className="mx-auto flex max-w-[1040px] flex-col items-start gap-2 px-4 py-3 sm:h-20 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-0">
         <Link href="/" className="flex items-center gap-2 leading-none" aria-label="Startup Radar home">
           <Image src="/startup-radar-mark.png" alt="" width={42} height={42} className="h-9 w-9 mix-blend-multiply dark:invert dark:mix-blend-screen sm:h-11 sm:w-11" />
           <span className="text-lg font-bold tracking-tight text-ink sm:text-2xl">Startup Radar</span>

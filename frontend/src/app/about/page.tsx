@@ -29,7 +29,7 @@ export default async function AboutPage() {
       <PageBanner compact eyebrow="About" title="Why this exists, and how it was built">
         The decisions and lessons behind Startup Radar.
       </PageBanner>
-      <main className="mx-auto max-w-7xl px-6 pb-10 pt-8 sm:px-8 sm:pb-16 sm:pt-10">
+      <main className="mx-auto max-w-[1040px] px-6 pb-10 pt-8 sm:px-8 sm:pb-16 sm:pt-10">
         <p className="mb-8 text-sm leading-relaxed">
               <Link href="/methodology" className="font-medium text-accent hover:underline">
                 Read the product-facing methodology

@@ -1,23 +1,24 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Public_Sans, Newsreader, JetBrains_Mono } from "next/font/google";
+import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { themeInitScript } from "@/lib/theme/theme-script";
 import "./globals.css";
 
-// Public Sans, not Inter — Inter is the de facto default of every AI-scaffolded/shadcn template,
-// and that association alone reads as "generated" regardless of the rest of the palette. Public
-// Sans has more character at display sizes while staying just as neutral for body copy.
-const publicSans = Public_Sans({
-  variable: "--font-public-sans",
+// Matches gradyallen.com's type system (editorial-personal-site-match branch): Inter for body/UI,
+// Instrument Serif for display headings (italics used sparingly, for emphasis on one word at a
+// time, not as a default style).
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
 
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
+  weight: "400",
   style: ["normal", "italic"],
   display: "swap",
 });
@@ -39,7 +40,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${publicSans.variable} ${newsreader.variable} ${jetbrainsMono.variable} h-full`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} h-full`}>
       <body className="flex min-h-full flex-col bg-canvas font-sans text-ink antialiased">
         <Script id="theme-init" strategy="beforeInteractive">{themeInitScript()}</Script>
         <SiteHeader />

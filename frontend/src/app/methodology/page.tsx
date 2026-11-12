@@ -20,7 +20,7 @@ export default function MethodologyPage() {
     <PageBanner compact eyebrow="Methodology" title="How Startup Radar works">
       What Scout actually does, what the numbers on this site mean, and what we deliberately don&rsquo;t do.
     </PageBanner>
-    <main className="mx-auto max-w-7xl px-6 pb-10 pt-8 sm:px-8 sm:pb-14 sm:pt-10">
+    <main className="mx-auto max-w-[1040px] px-6 pb-10 pt-8 sm:px-8 sm:pb-14 sm:pt-10">
       <div>
         <Section heading="Discovery">
           <p>

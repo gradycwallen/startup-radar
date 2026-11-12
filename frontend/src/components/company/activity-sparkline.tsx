@@ -67,7 +67,7 @@ export function ActivitySparkline({ series }: { series: ActivitySeries }) {
   }
 
   return (
-    <div className="rounded-lg border border-line p-4">
+    <div className=" border border-line p-4">
       <div className="flex items-baseline justify-between">
         <h4 className="text-sm font-medium text-ink">
           {metricLabel(series.metricName)}

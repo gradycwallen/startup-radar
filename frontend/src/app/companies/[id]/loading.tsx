@@ -27,15 +27,15 @@ export default function Loading() {
         <Skeleton className="h-5 w-5/6" />
       </div>
 
-      <Skeleton className="mt-8 h-20 w-full max-w-2xl rounded-lg" />
+      <Skeleton className="mt-8 h-20 w-full max-w-2xl " />
 
       <section className="mt-14 max-w-3xl">
         <Skeleton className="h-7 w-44" />
         <Skeleton className="mt-2 h-4 w-full max-w-md" />
         <Skeleton className="mt-3 h-3 w-40" />
         <div className="mt-6 space-y-3">
-          <Skeleton className="h-24 w-full rounded-lg" />
-          <Skeleton className="h-24 w-full rounded-lg" />
+          <Skeleton className="h-24 w-full " />
+          <Skeleton className="h-24 w-full " />
         </div>
       </section>
 

@@ -14,7 +14,7 @@ export function CompanyCard({ company, index }: { company: CompanyWithEvents; in
         <div className="min-w-0"><h3 className="truncate text-lg font-bold tracking-tight group-hover:text-accent">{company.name}</h3><p className="truncate text-xs text-ink-faint">{company.domain}</p></div>
       </div>
       <span className="text-sm text-ink-muted">{company.category ?? "Uncategorized"}</span>
-      <div><p className="line-clamp-2 text-sm leading-relaxed text-ink-muted">{evidence ?? "Evidence available on company profile."}</p>{company.events[0] && <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-ink-faint"><span className="border border-accent/30 bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">{eventTypeMeta(company.events[0].eventType).short}</span>{company.events[0].sourceName && <span>{company.events[0].sourceName}</span>}</div>}</div>
+      <div><p className="line-clamp-2 text-sm leading-relaxed text-ink-muted">{evidence ?? "Evidence available on company profile."}</p>{company.events[0] && <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-ink-faint"><span className="font-mono border border-line bg-accent-soft px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-ink-muted">{eventTypeMeta(company.events[0].eventType).short}</span>{company.events[0].sourceName && <span>{company.events[0].sourceName}</span>}</div>}</div>
       <span className="flex items-center gap-2 font-mono text-xs text-ink-faint sm:justify-end"><span>{recencyLabel(company.discoveredAt)}</span><span aria-hidden="true" className="text-base text-accent opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">↗</span></span>
     </Link>
   );

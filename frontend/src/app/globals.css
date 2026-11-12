@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 /*
- * Design tokens for Startup Radar.
- *
- * Restrained neutral system (warm stone/zinc grays) with a deep maroon accent,
- * used sparingly for signal/attention (active nav, primary actions, the strongest Momentum)
- * rather than as a general brand color. Light and dark are the SAME visual identity, not two
- * different-looking themes — dark mode swaps the token values below, every component reads the
- * tokens. Serif for display type (editorial, not a generic SaaS sans), a restrained sans for body,
- * monospace only for genuinely tabular/data text (counts, domains, timestamps) — not a thematic
- * statement, just how a dense data table usually sets numbers.
+ * Design tokens for Startup Radar — restyled to match gradyallen.com (editorial-personal-site-match
+ * branch): quiet, editorial, a printed page rather than a dashboard. No general accent color —
+ * `--color-accent` is set equal to `--color-ink` itself (the brief's own fallback: "if an accent is
+ * structurally needed, use near-black, never blue/orange/brand colors"), so every existing
+ * `text-accent`/`border-accent`/`bg-accent` usage across the app renders in plain ink without any
+ * per-component edit. The ONE real color, `--color-live`, is reserved for a literal live/active
+ * status indicator (the homepage's "Updated Xh ago" dot) — never a general brand or link color.
+ * Serif (Instrument Serif) for display type, a clean sans (Inter) for body, monospace (JetBrains
+ * Mono) only for genuinely tabular/data text (counts, domains, timestamps, labels).
  *
  * Theme selection: an explicit `data-theme="light" | "dark"` attribute on <html>, set by the
  * blocking inline script in src/app/layout.tsx (src/lib/theme/theme-script.ts) before first paint —
@@ -19,35 +19,38 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-  --color-canvas: #fbfaf8;
+  --color-canvas: #f7f7f5;
   --color-surface: #ffffff;
-  --color-ink: #18181b;
-  --color-ink-muted: #52525b;
-  --color-ink-faint: #8a8a93;
-  --color-line: #e7e5e2;
-  --color-line-strong: #d4d2ce;
-  --color-accent: #702b3a;
-  --color-accent-soft: #f1e6e8;
+  --color-ink: #141414;
+  --color-ink-muted: #5e5e5b;
+  --color-ink-faint: #9a9a96;
+  --color-line: #e3e3df;
+  --color-line-strong: #d3d3cd;
+  --color-accent: #141414;
+  /* Doubles as the brief's "hover" wash (#EFEFEC) — same value, one token, since this app already
+     had an accent-soft slot and the two were identical once the accent was neutralized to ink. */
+  --color-accent-soft: #efefec;
+  --color-live: #2f7d5b;
 
-  --font-sans: var(--font-public-sans);
-  --font-serif: var(--font-newsreader);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-instrument-serif);
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* Dark theme — neutral charcoal surfaces (never pure black, never warm/brown), off-white ink, and
- * a deepened wine accent for contrast against a dark ground. (An earlier pass here, #d9a1ad, was
- * too light/desaturated and read as pastel pink rather than wine — same hue family as the light
- * accent, #702b3a, just brightened enough for dark-ground contrast: HSL(347°, 40%, 55%).) */
+/* Dark theme — the same quiet, no-accent identity, inverted: a neutral near-black (never warm
+ * brown, never blue-tinted), off-white ink, and the live indicator brightened only as far as
+ * needed for dark-ground contrast — still the one and only color on the page. */
 [data-theme="dark"] {
-  --color-canvas: #1a1a1a;
-  --color-surface: #242424;
-  --color-ink: #f0f0ee;
-  --color-ink-muted: #a8a8a6;
-  --color-ink-faint: #7d7d7b;
-  --color-line: #2f2f2e;
-  --color-line-strong: #3d3d3b;
-  --color-accent: #ba5e72;
-  --color-accent-soft: #3a1f26;
+  --color-canvas: #171717;
+  --color-surface: #222220;
+  --color-ink: #f2f2f0;
+  --color-ink-muted: #a8a8a3;
+  --color-ink-faint: #76766f;
+  --color-line: #2e2e2b;
+  --color-line-strong: #3a3a36;
+  --color-accent: #f2f2f0;
+  --color-accent-soft: #262623;
+  --color-live: #4ca37a;
 }
 
 html {

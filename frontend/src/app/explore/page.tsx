@@ -21,7 +21,7 @@ export default async function ExplorePage({ searchParams }: PageProps<"/explore"
       Search and filter every company Startup Radar has discovered, useful when you already know roughly what you&rsquo;re
       looking for, or want to browse by category, signal type or confidence.
     </PageBanner>
-    <main className="mx-auto max-w-7xl px-6 pb-10 pt-8 sm:px-8 sm:pb-12 sm:pt-10">
+    <main className="mx-auto max-w-[1040px] px-6 pb-10 pt-8 sm:px-8 sm:pb-12 sm:pt-10">
 
       <DataSourceBanner source={source} />
 

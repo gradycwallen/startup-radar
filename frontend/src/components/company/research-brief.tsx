@@ -13,7 +13,7 @@ function sourceLabel(type: string): string {
 export function ResearchBrief({ company, intelligence }: { company: CompanyWithEvents; intelligence: SignalIntelligence }) {
   const latest = company.events[0];
   return <aside className="border border-accent/20 bg-accent-soft/60 p-6 sm:p-7">
-    <p className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-accent"><span aria-hidden="true" className="h-2 w-2 bg-accent" />Research brief</p>
+    <p className="flex items-center gap-2.5 font-mono text-xs font-medium uppercase tracking-[0.16em] text-ink-faint"><span aria-hidden="true" className="h-2 w-2 bg-accent" />Research brief</p>
     <dl className="mt-6 space-y-6 text-sm">
       <div><dt className="text-xs uppercase tracking-wider text-ink-faint">Discovered through</dt><dd className="mt-1 text-ink">{company.discoveryUrl ? <a className="text-accent hover:underline" href={company.discoveryUrl} target="_blank" rel="noreferrer noopener">{company.discoverySource ?? "Original source"} ↗</a> : company.discoverySource ?? "Source not specified"} · {formatDate(company.discoveredAt)}</dd></div>
       {latest && <div><dt className="text-xs uppercase tracking-wider text-ink-faint">Latest discovery event</dt><dd className="mt-1 leading-relaxed text-ink">{latest.headline ?? latest.description ?? "Discovery event recorded"}{latest.sourceUrl && <> · <a href={latest.sourceUrl} target="_blank" rel="noreferrer noopener" className="text-accent hover:underline">{latest.sourceName ?? "Source"} ↗</a></>}</dd></div>}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CompanyWithEvents } from "@/lib/data/types";
+import { Eyebrow } from "@/components/ui/eyebrow";
 
 // Manually reviewed examples, selected for independently corroborated identities, discovery
 // sources and existing observation histories. Match on domain as well as id to avoid stale links.
@@ -16,7 +17,7 @@ export function StartExploring({ companies }: { companies: readonly CompanyWithE
   });
   if (!examples.length) return null;
   return <section className="mt-10 border-t border-line-strong pt-6" aria-labelledby="start-exploring">
-    <div className="flex flex-wrap items-baseline justify-between gap-2"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">A place to start</p><h2 id="start-exploring" className="mt-2 text-2xl font-bold tracking-tight">Explore the evidence</h2></div><p className="text-xs text-ink-muted">Selected examples with discovery sources and signal history.</p></div>
-    <div className="mt-5 grid gap-px border border-line bg-line sm:grid-cols-3">{examples.map(({ company, label, note }) => <Link key={company.id} href={`/companies/${company.id}`} className="group bg-canvas p-5 transition-colors hover:bg-accent-soft/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"><p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-accent">{label}</p><h3 className="mt-2 text-lg font-bold tracking-tight group-hover:text-accent">{company.name} <span aria-hidden="true">↗</span></h3><p className="mt-2 text-sm leading-relaxed text-ink-muted">{note}</p></Link>)}</div>
+    <div className="flex flex-wrap items-baseline justify-between gap-2"><div><Eyebrow>A place to start</Eyebrow><h2 id="start-exploring" className="mt-2 font-serif text-2xl tracking-tight">Explore the evidence</h2></div><p className="text-xs text-ink-muted">Selected examples with discovery sources and signal history.</p></div>
+    <div className="mt-5 grid gap-px border border-line bg-line sm:grid-cols-3">{examples.map(({ company, label, note }) => <Link key={company.id} href={`/companies/${company.id}`} className="group bg-canvas p-5 transition-colors hover:bg-accent-soft"><p className="font-mono text-[10px] font-medium uppercase tracking-[0.15em] text-ink-faint">{label}</p><h3 className="mt-2 font-serif text-lg tracking-tight">{company.name} <span aria-hidden="true">↗</span></h3><p className="mt-2 text-sm leading-relaxed text-ink-muted">{note}</p></Link>)}</div>
   </section>;
 }

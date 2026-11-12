@@ -19,7 +19,7 @@ export default async function InsightsPage() {
         <PageBanner compact eyebrow="Insights" title="Dataset trends">
           Aggregate activity across every company Startup Radar tracks.
         </PageBanner>
-        <main className="mx-auto max-w-7xl px-6 pb-16 pt-8 sm:px-8">
+        <main className="mx-auto max-w-[1040px] px-6 pb-16 pt-8 sm:px-8">
           <p className="text-sm text-ink-muted">Live insights are unavailable. Connect to the database or try again later.</p>
         </main>
       </>
@@ -32,7 +32,7 @@ export default async function InsightsPage() {
         <PageBanner compact eyebrow="Insights" title="Dataset trends">
           Aggregate activity across every company Startup Radar tracks.
         </PageBanner>
-        <main className="mx-auto max-w-7xl px-6 pb-16 pt-8 sm:px-8">
+        <main className="mx-auto max-w-[1040px] px-6 pb-16 pt-8 sm:px-8">
           <p className="text-sm text-ink-muted">No companies tracked yet.</p>
         </main>
       </>
@@ -47,7 +47,7 @@ export default async function InsightsPage() {
       <PageBanner compact eyebrow="Insights" title="Dataset trends">
         A weekly view of discovery and signal activity, plus the sources behind the directory.
       </PageBanner>
-      <main className="mx-auto max-w-7xl px-6 pb-16 pt-8 sm:px-8">
+      <main className="mx-auto max-w-[1040px] px-6 pb-16 pt-8 sm:px-8">
         <section>
           <h2 className="text-base font-semibold text-ink">Discovery volume</h2>
           <p className="mt-1.5 max-w-2xl text-sm text-ink-muted">New companies added to the Radar each week.</p>
